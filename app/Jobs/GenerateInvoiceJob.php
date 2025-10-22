@@ -62,6 +62,7 @@ class GenerateInvoiceJob implements ShouldQueue
                 'order_id' => $this->order->id,
                 'order_number' => $this->order->order_number,
                 'total' => $this->order->total,
+                'client_id' => $this->order->client_id,
                 'user_id' => $this->order->user_id,
             ]);
 
@@ -103,6 +104,8 @@ class GenerateInvoiceJob implements ShouldQueue
             'order_id' => $this->order->id,
             'invoice_number' => 'INV-' . $this->order->order_number,
             'amount' => $this->order->total,
+            'client_id' => $this->order->client_id,
+            'user_id' => $this->order->user_id
         ]);
     }
 
