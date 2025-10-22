@@ -39,6 +39,16 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
         
+        // Handle authentication exceptions for API routes
+        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'message' => 'Unauthenticated.',
+                    'status_code' => 401,
+                ], 401);
+            }
+        });
+        
         // Handle method not allowed for API routes
         $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException $e, $request) {
             if ($request->is('api/*')) {

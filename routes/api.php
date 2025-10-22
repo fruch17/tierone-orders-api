@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ClientController;
+use App\Http\Controllers\Api\OrderController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -35,8 +37,22 @@ Route::middleware('auth:sanctum')->group(function () {
             ->name('api.auth.me');
     });
     
-    // Orders routes will be added here
-    // Route::resource('orders', OrderController::class);
-    // Route::get('clients/{id}/orders', [ClientController::class, 'orders']);
+    // Order routes
+    Route::prefix('orders')->group(function () {
+        Route::get('/', [OrderController::class, 'index'])
+            ->name('api.orders.index');
+        
+        Route::post('/', [OrderController::class, 'store'])
+            ->name('api.orders.store');
+        
+        Route::get('/{id}', [OrderController::class, 'show'])
+            ->name('api.orders.show');
+    });
+    
+    // Client routes
+    Route::prefix('clients')->group(function () {
+        Route::get('/{id}/orders', [ClientController::class, 'orders'])
+            ->name('api.clients.orders');
+    });
 });
 
