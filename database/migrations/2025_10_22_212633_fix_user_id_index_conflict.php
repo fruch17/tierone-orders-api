@@ -2,32 +2,39 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     /**
      * Run the migrations.
-     * Add user_id field to orders table for audit trail
-     * client_id: for multi-tenancy (which client the order belongs to)
-     * user_id: for audit trail (which user created the order)
+     * Fix user_id index conflict for testing
      */
     public function up(): void
     {
+        // Check if the index exists and drop it if it does
+        if (Schema::hasColumn('orders', 'user_id')) {
+            Schema::table('orders', function (Blueprint $table) {
+                // Try to drop the index if it exists
+                try {
+                    $table->dropIndex(['user_id']);
+                } catch (\Exception $e) {
+                    // Index might not exist, continue
+                }
+                
+                // Drop the column
+                $table->dropColumn('user_id');
+            });
+        }
+        
+        // Recreate the column and index properly
         Schema::table('orders', function (Blueprint $table) {
             $table->unsignedBigInteger('user_id')
-                  ->nullable()
                   ->after('client_id')
                   ->comment('User who created the order (for audit trail)');
         });
         
-        // Update existing orders to have user_id = client_id
-        DB::statement('UPDATE orders SET user_id = client_id WHERE user_id IS NULL');
-        
-        // Make user_id NOT NULL and add constraints
         Schema::table('orders', function (Blueprint $table) {
-            $table->unsignedBigInteger('user_id')->nullable(false)->change();
             $table->index('user_id');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
@@ -35,7 +42,6 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
-     * Remove user_id field from orders table
      */
     public function down(): void
     {
