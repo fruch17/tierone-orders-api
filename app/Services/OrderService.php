@@ -31,7 +31,8 @@ class OrderService
         return DB::transaction(function () use ($request) {
             // Create the order
             $order = Order::create([
-                'user_id' => auth()->id(), // Multi-tenancy: auto-assign authenticated user
+                'client_id' => auth()->user()->getEffectiveClientId(), // Multi-tenancy: use effective client ID
+                'user_id' => auth()->id(), // Audit trail: track who created the order
                 'tax' => $request->tax,
                 'notes' => $request->notes,
                 'subtotal' => 0, // Will be calculated after items are created
@@ -68,8 +69,8 @@ class OrderService
      */
     public function getOrderById(int $orderId): ?Order
     {
-        return Order::forAuthUser()
-                   ->with(['items', 'user'])
+        return Order::forAuthClient()
+                   ->with(['items','user'])
                    ->find($orderId);
     }
 
@@ -82,8 +83,8 @@ class OrderService
      */
     public function getOrdersForAuthUser(): Collection
     {
-        return Order::forAuthUser()
-                   ->with(['items'])
+        return Order::forAuthClient()
+                   ->with(['items', 'user'])
                    ->latest()
                    ->get();
     }
@@ -99,13 +100,14 @@ class OrderService
      */
     public function getOrdersForClient(int $clientId): Collection
     {
-        // Security check: client can only access their own orders
-        if (auth()->id() !== $clientId) {
-            abort(403, 'Forbidden. You can only access your own orders.');
+        // Security check: user can only access orders for their effective client
+        $effectiveClientId = auth()->user()->getEffectiveClientId();
+        if ($effectiveClientId !== $clientId) {
+            abort(403, 'Forbidden. You can only access orders for your client.');
         }
 
-        return Order::where('user_id', $clientId)
-                   ->with(['items'])
+        return Order::where('client_id', $clientId)
+                   ->with(['items', 'user'])
                    ->latest()
                    ->get();
     }

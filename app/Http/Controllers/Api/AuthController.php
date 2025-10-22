@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\RegisterStaffRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -37,6 +38,8 @@ class AuthController extends Controller
             'company_name' => $validated['company_name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
+            'role' => $validated['role'] ?? 'admin', // Auto-assigned in RegisterRequest
+            'client_id' => $validated['client_id'] ?? 0, // Auto-assigned in RegisterRequest
         ]);
 
         // Generate API token for immediate authentication
@@ -118,5 +121,44 @@ class AuthController extends Controller
             'user' => new UserResource(auth()->user()),
             'status_code' => 200,
         ], 200);
+    }
+
+    /**
+     * Register a new staff member.
+     * Only admin users can register staff
+     * Following Single Responsibility: only handles HTTP request/response
+     *
+     * @param RegisterStaffRequest $request
+     * @return JsonResponse
+     */
+    public function registerStaff(RegisterStaffRequest $request): JsonResponse
+    {
+        try {
+            // Validation already handled by RegisterStaffRequest (SRP)
+            $validatedData = $request->validated();
+
+            // Create staff user with role 'staff'
+            $staff = User::create([
+                'name' => $validatedData['name'],
+                'company_name' => null, // Staff don't have company_name (belongs to admin's company)
+                'email' => $validatedData['email'],
+                'password' => Hash::make($validatedData['password']),
+                'role' => 'staff', // Staff role assigned
+                'client_id' => auth()->id(), // Staff belongs to the admin who created them
+            ]);
+
+            return response()->json([
+                'message' => 'Staff member registered successfully',
+                'staff' => new UserResource($staff),
+                'status_code' => 201,
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to register staff member',
+                'error' => 'An error occurred while registering the staff member',
+                'status_code' => 500,
+            ], 500);
+        }
     }
 }

@@ -19,6 +19,7 @@ class Order extends Model
      * @var array<string>
      */
     protected $fillable = [
+        'client_id',
         'user_id',
         'order_number',
         'subtotal',
@@ -53,10 +54,14 @@ class Order extends Model
     {
         parent::boot();
 
-        // Auto-assign user_id from authenticated user (Multi-tenancy)
+        // Auto-assign client_id and user_id from authenticated user (Multi-tenancy + Audit)
         static::creating(function (Order $order) {
+            if (auth()->check() && !$order->client_id) {
+                $order->client_id = auth()->user()->getEffectiveClientId();
+            }
+            
             if (auth()->check() && !$order->user_id) {
-                $order->user_id = auth()->id();
+                $order->user_id = auth()->id(); // Track who created the order
             }
 
             // Auto-generate unique order number if not provided
@@ -82,14 +87,27 @@ class Order extends Model
     }
 
     /**
-     * Get the user that owns the order.
-     * Defines the inverse of hasMany relationship
+     * Get the user that created the order.
+     * Defines the relationship with User model for audit trail
+     * This tracks who specifically created the order
      *
      * @return BelongsTo
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+
+    /**
+     * Get the client that owns the order.
+     * Defines the relationship with User model for multi-tenancy
+     * Both admin and staff can access orders for the same client
+     *
+     * @return BelongsTo
+     */
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'client_id', 'id');
     }
 
     /**
@@ -104,20 +122,34 @@ class Order extends Model
     }
 
     /**
-     * Scope to filter orders by authenticated user.
-     * Ensures multi-tenancy: users only see their own orders
-     * Usage: Order::forAuthUser()->get()
+     * Scope to filter orders by authenticated user's client.
+     * Ensures multi-tenancy: users only see orders for their client
+     * Admin sees their own orders, staff sees their admin's orders
+     * Usage: Order::forAuthClient()->get()
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeForAuthClient($query)
+    {
+        if (auth()->check()) {
+            $clientId = auth()->user()->getEffectiveClientId();
+            return $query->where('client_id', $clientId);
+        }
+        
+        return $query;
+    }
+
+    /**
+     * Scope to filter orders by authenticated user (legacy method).
+     * This is now an alias for scopeForAuthClient()
      *
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForAuthUser($query)
     {
-        if (auth()->check()) {
-            return $query->where('user_id', auth()->id());
-        }
-        
-        return $query;
+        return $this->scopeForAuthClient($query);
     }
 
     /**

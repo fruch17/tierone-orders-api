@@ -3,17 +3,16 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rules\Password;
 
-class RegisterRequest extends FormRequest
+class RegisterStaffRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     * Registration is public, so always return true
+     * Only admin users can register staff
      */
     public function authorize(): bool
     {
-        return true;
+        return auth()->check() && auth()->user()->isAdmin();
     }
 
     /**
@@ -26,9 +25,9 @@ class RegisterRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'company_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'confirmed', Password::min(8)],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password_confirmation' => ['required', 'string', 'min:8'],
         ];
     }
 
@@ -42,20 +41,29 @@ class RegisterRequest extends FormRequest
     {
         return [
             'name.required' => 'The name field is required.',
-            'company_name.required' => 'The company name field is required.',
+            'name.string' => 'The name must be a valid text.',
+            'name.max' => 'The name cannot exceed 255 characters.',
+            
             'email.required' => 'The email field is required.',
-            'email.email' => 'Please provide a valid email address.',
-            'email.unique' => 'This email is already registered.',
+            'email.string' => 'The email must be a valid text.',
+            'email.email' => 'The email must be a valid email address.',
+            'email.max' => 'The email cannot exceed 255 characters.',
+            'email.unique' => 'The email has already been taken.',
+            
             'password.required' => 'The password field is required.',
-            'password.confirmed' => 'The password confirmation does not match.',
+            'password.string' => 'The password must be a valid text.',
             'password.min' => 'The password must be at least 8 characters.',
+            'password.confirmed' => 'The password confirmation does not match.',
+            
+            'password_confirmation.required' => 'The password confirmation field is required.',
+            'password_confirmation.string' => 'The password confirmation must be a valid text.',
+            'password_confirmation.min' => 'The password confirmation must be at least 8 characters.',
         ];
     }
 
     /**
      * Prepare the data for validation.
      * Ensures data is properly formatted before validation
-     * Auto-assigns admin role for public registration
      */
     protected function prepareForValidation(): void
     {
@@ -65,12 +73,5 @@ class RegisterRequest extends FormRequest
                 'email' => strtolower($this->email)
             ]);
         }
-
-        // Auto-assign admin role for public registration
-        // This ensures the first registered user becomes admin
-        $this->merge([
-            'role' => 'admin',
-            'client_id' => 0, // Admin users have client_id = 0 (they are their own client)
-        ]);
     }
 }

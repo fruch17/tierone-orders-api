@@ -35,6 +35,11 @@ Route::middleware('auth:sanctum')->group(function () {
         
         Route::get('/me', [AuthController::class, 'me'])
             ->name('api.auth.me');
+        
+        // Admin-only routes
+        Route::post('/register-staff', [AuthController::class, 'registerStaff'])
+            ->middleware('admin')
+            ->name('api.auth.register-staff');
     });
     
     // Order routes

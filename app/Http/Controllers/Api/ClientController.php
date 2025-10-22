@@ -40,10 +40,11 @@ class ClientController extends Controller
     public function orders(int $id): JsonResponse
     {
         try {
-            // Security check: client can only access their own orders
-            if (auth()->id() !== $id) {
+            // Security check: user can only access orders for their effective client
+            $effectiveClientId = auth()->user()->getEffectiveClientId();
+            if ($effectiveClientId !== $id) {
                 return response()->json([
-                    'message' => 'Forbidden. You can only access your own orders.',
+                    'message' => 'Forbidden. You can only access orders for your client.',
                     'status_code' => 403,
                 ], 403);
             }
