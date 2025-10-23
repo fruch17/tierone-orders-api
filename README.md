@@ -1,66 +1,315 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# TierOne Orders API - Technical Challenge
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+[![Laravel](https://img.shields.io/badge/Laravel-11.x-red.svg)](https://laravel.com)
+[![PHP](https://img.shields.io/badge/PHP-8.2+-blue.svg)](https://php.net)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0+-orange.svg)](https://mysql.com)
+[![Tests](https://img.shields.io/badge/Tests-25%20passed-green.svg)](https://github.com/fruch17/tierone-orders-api)
 
-## About Laravel
+A **multi-tenant Order Management API** built with Laravel 11 for the TierOne Engineering technical challenge. Features role-based authentication, order management, asynchronous invoice generation, and comprehensive testing following SOLID principles.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 🚀 Quick Start
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Prerequisites
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **PHP 8.2+** with extensions: BCMath, Ctype, cURL, DOM, Fileinfo, JSON, Mbstring, OpenSSL, PCRE, PDO, Tokenizer, XML
+- **MySQL 8.0+** or **MariaDB 10.3+**
+- **Composer 2.0+**
 
-## Learning Laravel
+> **Note**: This is a pure API project. Frontend assets (Node.js, Vite, Tailwind) are included by default but not required for API functionality.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Installation
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/fruch17/tierone-orders-api.git
+   cd tierone-orders-api
+   ```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+2. **Install dependencies**
+   ```bash
+   composer install
+   ```
 
-## Laravel Sponsors
+3. **Environment setup**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+4. **Database configuration**
+   ```bash
+   # Update .env with your database credentials
+   DB_CONNECTION=mysql
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
+   DB_DATABASE=your_database_name
+   DB_USERNAME=your_username
+   DB_PASSWORD=your_password
+   ```
 
-### Premium Partners
+5. **Create database**
+   ```bash
+   mysql -u your_username -p -e "CREATE DATABASE your_database_name;"
+   ```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+6. **Run migrations**
+   ```bash
+   php artisan migrate
+   ```
 
-## Contributing
+7. **Start the server**
+   ```bash
+   # Option 1: Laravel development server
+   php artisan serve
+   
+   # Option 2: Use your preferred web server (Apache, Nginx, etc.)
+   # Configure your web server to point to the 'public' directory
+   # The API will be available at your configured domain/port
+   ```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+   The API will be available at:
+   - Laravel server: `http://localhost:8000`
+   - Custom server: `http://your-domain.com` (or your configured URL)
 
-## Code of Conduct
+## 🌐 Web Server Configuration
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Apache Configuration
+```apache
+<VirtualHost *:80>
+    ServerName your-domain.com
+    DocumentRoot /path/to/tierone-orders-api/public
+    
+    <Directory /path/to/tierone-orders-api/public>
+        AllowOverride All
+        Require all granted
+    </Directory>
+</VirtualHost>
+```
 
-## Security Vulnerabilities
+### Nginx Configuration
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+    root /path/to/tierone-orders-api/public;
+    
+    index index.php;
+    
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+    
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+}
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### WAMP/XAMPP Setup
+1. Copy project to `htdocs` or `www` directory
+2. Access via `http://localhost/tierone-orders-api/public`
+3. Update `.env` with correct `APP_URL`
 
-## License
+## 🧪 Testing
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Run Tests
+```bash
+# Run all tests
+php artisan test
+
+# Run specific test suites
+php artisan test --filter AuthTest
+php artisan test --filter OrderTest
+php artisan test --filter BasicApiTest
+
+# Run with debug information
+php artisan test --debug
+```
+
+### Test Results
+- **25 tests** passing
+- **173 assertions** verified
+- **0 failures**
+- **MySQL database** testing environment
+
+## 📚 API Documentation
+
+### Authentication Endpoints
+- `POST /api/auth/register` - Register new admin user
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+- `GET /api/auth/me` - Get current user
+- `POST /api/auth/register-staff` - Register staff (admin only)
+
+### Order Management Endpoints
+- `POST /api/orders` - Create new order
+- `GET /api/orders/{id}` - Get order by ID
+- `GET /api/orders` - List user's orders
+- `GET /api/clients/{id}/orders` - List client orders
+
+### Quick API Test
+```bash
+# Register a new user (replace localhost:8000 with your server URL)
+curl -X POST http://localhost:8000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "name": "John Doe",
+    "company_name": "ACME Corp",
+    "email": "john@acme.com",
+    "password": "password123",
+    "password_confirmation": "password123"
+  }'
+```
+
+## 📖 Detailed Documentation
+
+### Core Features
+- [**API Authentication**](docs/API_AUTH.md) - Complete authentication flow
+- [**Order Management**](docs/API_ORDERS.md) - Order CRUD operations
+- [**Error Handling**](docs/API_ERROR_HANDLING.md) - JSON error responses
+- [**Multi-tenancy**](docs/MULTITENANCY_IMPLEMENTATION.md) - Client isolation
+
+### Architecture & Implementation
+- [**Role-Based Multi-tenancy**](docs/ROLE_BASED_MULTITENANCY.md) - Admin/Staff roles
+- [**Order Audit Trail**](docs/ORDER_AUDIT_TRAIL.md) - User tracking
+- [**AuthService Refactoring**](docs/AUTHSERVICE_REFACTORING.md) - Service layer
+- [**Optimized Migrations**](docs/MIGRACIONES_OPTIMIZADAS.md) - Database schema
+
+### Asynchronous Processing
+- [**Order to Job Process**](docs/ORDER_TO_JOB_PROCESS_FLOW.md) - Invoice generation
+- [**Visual Flow Diagram**](docs/ORDER_TO_JOB_VISUAL_FLOW.md) - Process visualization
+- [**Study Guide**](docs/ORDER_TO_JOB_STUDY_GUIDE.md) - Testing commands
+
+### Testing Documentation
+- [**Testing Guide**](docs/TESTING_GUIDE.md) - Step-by-step testing
+- [**Testing Documentation**](docs/TESTING_DOCUMENTATION.md) - Comprehensive testing
+- [**Testing Summary**](docs/TESTING_SUMMARY.md) - Test results analysis
+
+### Development Approach
+- [**Development Approach (English)**](docs/MY_DEVELOPMENT_APPROACH.md) - Technical methodology
+- [**Enfoque de Desarrollo (Español)**](docs/MI_ENFOQUE_DESARROLLO.md) - Metodología técnica
+
+## 🛠️ Postman Collection
+
+Import the Postman collection for easy API testing:
+
+1. **Collection**: [docs/postman/TierOne Orders API - Challenge.postman_collection.json](docs/postman/TierOne%20Orders%20API%20-%20Challenge.postman_collection.json)
+2. **Import** into Postman
+3. **Update** environment variables:
+   - `base_url`: `http://localhost:8000` (or your server URL)
+   - `token`: (auto-set after login)
+   - `user_id`: (auto-set after login)
+
+## 🏗️ Architecture
+
+### Technology Stack
+- **Framework**: Laravel 11
+- **Database**: MySQL 8.0+
+- **Authentication**: Laravel Sanctum
+- **Queue**: Database driver
+- **Testing**: PHPUnit with MySQL
+
+### Key Features
+- ✅ **Multi-tenant Architecture** - Client data isolation
+- ✅ **Role-Based Access Control** - Admin/Staff roles
+- ✅ **RESTful API** - JSON responses with proper status codes
+- ✅ **Service Layer Pattern** - Business logic separation
+- ✅ **Comprehensive Testing** - Feature and unit tests
+- ✅ **Asynchronous Processing** - Queue jobs for invoice generation
+- ✅ **Audit Trail** - User tracking for orders
+- ✅ **SOLID Principles** - Clean, maintainable code
+
+### Database Schema
+- **users** - Authentication and multi-tenancy
+- **orders** - Order management with client isolation
+- **order_items** - Order line items
+- **jobs** - Queue job processing
+- **personal_access_tokens** - API authentication
+
+## 🔧 Configuration
+
+### Environment Variables
+```env
+APP_NAME="TierOne Orders API"
+APP_ENV=local
+APP_KEY=base64:...
+APP_DEBUG=true
+APP_URL=http://localhost:8000
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=your_database_name
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+
+QUEUE_CONNECTION=database
+```
+
+### Queue Configuration
+```bash
+# Process queue jobs
+php artisan queue:work
+
+# Monitor queue status
+php artisan queue:monitor
+```
+
+## 🎯 Challenge Requirements
+
+### ✅ Completed Features
+- **Client Management** - Multi-tenant user system
+- **Order Creation** - POST /api/orders with validation
+- **Order Retrieval** - GET /api/orders/{id}
+- **Client Order Listing** - GET /api/clients/{id}/orders
+- **Asynchronous Invoice Generation** - Queue job processing
+- **Authentication** - Laravel Sanctum token-based auth
+- **Testing** - Comprehensive test suite
+
+### 🏆 Additional Implementations
+- **Role-Based Access Control** - Admin/Staff roles
+- **Audit Trail** - User tracking for orders
+- **Service Layer Architecture** - SOLID principles
+- **Comprehensive Documentation** - Technical guides
+- **Postman Collection** - API testing
+- **Error Handling** - JSON error responses
+- **Optimized Migrations** - Clean database schema
+
+## 📊 Project Statistics
+
+- **25 Tests** - All passing
+- **173 Assertions** - Verified
+- **7 Test Files** - Feature and unit tests
+- **2 Factory Files** - Test data generation
+- **15+ Documentation Files** - Comprehensive guides
+- **1 Postman Collection** - API testing
+
+## 🤝 Contributing
+
+This project was developed as part of the TierOne Engineering technical challenge. The implementation demonstrates:
+
+- **Laravel Expertise** - Modern Laravel 11 features
+- **SOLID Principles** - Clean architecture
+- **TDD Approach** - Test-driven development
+- **Professional Standards** - Production-ready code
+- **Comprehensive Documentation** - Technical guides
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👨‍💻 Developer
+
+**Freddy Urbina**  
+Email: fruch17@gmail.com  
+GitHub: [@fruch17](https://github.com/fruch17)
+
+---
+
+**Repository**: [https://github.com/fruch17/tierone-orders-api](https://github.com/fruch17/tierone-orders-api)
+
+*Built with ❤️ for the TierOne Engineering technical challenge*
