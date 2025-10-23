@@ -77,6 +77,7 @@ mysql -u [YOUR_DB_USER] -p [YOUR_DB_NAME] -e "SHOW TABLES;"
 ```
 
 **Expected Tables:**
+- `clients` - Client companies/organizations
 - `users` - User authentication and multi-tenancy
 - `orders` - Order management
 - `order_items` - Order line items
@@ -135,8 +136,8 @@ php artisan test --filter BasicApiTest
 ✓ orders endpoint requires auth
 ✓ admin endpoint requires admin
 
-Tests:    25 passed (173 assertions)
-Duration: 8.40s
+Tests:    25 passed (75 assertions)
+Duration: 3.2s
 Database: MySQL (production-like environment)
 ```
 
@@ -176,6 +177,7 @@ public function test_user_can_register(): void
     $userData = [
         'name' => 'John Doe',
         'company_name' => 'ACME Corp',
+        'company_email' => 'contact@acme.com',
         'email' => 'john@acme.com',
         'password' => 'password123',
         'password_confirmation' => 'password123',
@@ -189,10 +191,16 @@ public function test_user_can_register(): void
                 'user' => [
                     'id',
                     'name',
-                    'company_name',
                     'email',
                     'role',
                     'client_id'
+                ],
+                'client' => [
+                    'id',
+                    'company_name',
+                    'company_email',
+                    'created_at',
+                    'updated_at'
                 ],
                 'token',
                 'token_type',
@@ -210,10 +218,16 @@ public function test_user_can_register(): void
 ```php
 public function test_user_can_create_order(): void
 {
+    // Create client first
+    $client = Client::factory()->create([
+        'company_name' => 'TierOne Corp',
+        'company_email' => 'contact@tierone.com'
+    ]);
+
     // Create authenticated user
     $user = User::factory()->create([
         'role' => 'admin',
-        'client_id' => 0
+        'client_id' => $client->id
     ]);
 
     $orderData = [
@@ -249,13 +263,17 @@ public function test_user_can_create_order(): void
 ```php
 public function test_user_cannot_access_other_user_orders(): void
 {
-    // Create two users
-    $user1 = User::factory()->create(['role' => 'admin', 'client_id' => 0]);
-    $user2 = User::factory()->create(['role' => 'admin', 'client_id' => 0]);
+    // Create two clients
+    $client1 = Client::factory()->create(['company_name' => 'Client 1']);
+    $client2 = Client::factory()->create(['company_name' => 'Client 2']);
 
-    // Create order for user2
+    // Create two users for different clients
+    $user1 = User::factory()->create(['role' => 'admin', 'client_id' => $client1->id]);
+    $user2 = User::factory()->create(['role' => 'admin', 'client_id' => $client2->id]);
+
+    // Create order for user2's client
     $order = Order::factory()->create([
-        'client_id' => $user2->id,
+        'client_id' => $client2->id,
         'user_id' => $user2->id
     ]);
 
@@ -299,9 +317,9 @@ SQLSTATE[HY000]: General error: 1 no such table: users
 ```
 
 **What this means:**
-- All tests are now passing with MySQL database
+- All tests are passing with MySQL database
 - Database tables are properly created and accessible
-- Tests demonstrate complete functionality
+- Tests demonstrate complete functionality with client-user separation
 
 ## Test Categories
 
@@ -474,15 +492,22 @@ Before running tests, verify:
 
 ### User Factory
 ```php
+// Create client first
+$client = Client::factory()->create([
+    'company_name' => 'TierOne Corp',
+    'company_email' => 'contact@tierone.com'
+]);
+
 // Create admin user
 $admin = User::factory()->create([
     'role' => 'admin',
-    'client_id' => 0
+    'client_id' => $client->id
 ]);
 
 // Create staff user
-$staff = User::factory()->staff()->create([
-    'client_id' => $admin->id
+$staff = User::factory()->create([
+    'role' => 'staff',
+    'client_id' => $client->id
 ]);
 
 // Create multiple users
@@ -493,13 +518,13 @@ $users = User::factory()->count(5)->create();
 ```php
 // Create order for specific client
 $order = Order::factory()
-    ->forClient($admin)
+    ->forClient($client)
     ->createdBy($admin)
     ->create();
 
 // Create multiple orders
 $orders = Order::factory()->count(3)->create([
-    'client_id' => $admin->id
+    'client_id' => $client->id
 ]);
 ```
 

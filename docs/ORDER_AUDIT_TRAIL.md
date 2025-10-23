@@ -6,6 +6,18 @@ The TierOne Orders API now includes **audit trail functionality** by tracking bo
 
 ## Database Schema
 
+### Clients Table Structure
+```sql
+CREATE TABLE clients (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_name VARCHAR(255) NOT NULL,
+    company_email VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX clients_company_email_index (company_email)
+);
+```
+
 ### Orders Table Structure
 ```sql
 CREATE TABLE orders (
@@ -21,6 +33,8 @@ CREATE TABLE orders (
     updated_at TIMESTAMP NULL,
     INDEX orders_client_id_index (client_id),
     INDEX orders_user_id_index (user_id),
+    INDEX orders_client_created_index (client_id, created_at),
+    FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 ```
@@ -30,8 +44,8 @@ CREATE TABLE orders (
 ### `client_id` - Multi-Tenancy
 - **Purpose**: Determines which client the order belongs to
 - **Logic**: 
-  - Admin users: `client_id = admin_id` (their own ID)
-  - Staff users: `client_id = admin_id` (their admin's ID)
+  - Both admin and staff users belong to a client via `client_id` in users table
+  - Orders belong to the same client as the user who created them
 - **Usage**: Data isolation and access control
 
 ### `user_id` - Audit Trail
@@ -43,11 +57,12 @@ CREATE TABLE orders (
 
 ### Scenario 1: Admin Creates Order
 ```php
-// Admin User (ID: 1, role: admin, client_id: 0)
+// Admin User (ID: 1, role: admin, client_id: 1)
+// Client (ID: 1, company_name: "TierOne Corp")
 // Creates an order
 
 Order::create([
-    'client_id' => 1,  // Admin's effective client ID (their own ID)
+    'client_id' => 1,  // Client ID (same as user's client_id)
     'user_id' => 1,     // Admin's user ID (who created it)
     'tax' => 10.00,
     'notes' => 'Order created by admin',
@@ -58,10 +73,11 @@ Order::create([
 ### Scenario 2: Staff Creates Order
 ```php
 // Staff User (ID: 2, role: staff, client_id: 1)
+// Client (ID: 1, company_name: "TierOne Corp")
 // Creates an order for the same client as admin
 
 Order::create([
-    'client_id' => 1,  // Staff's effective client ID (admin's ID)
+    'client_id' => 1,  // Client ID (same as user's client_id)
     'user_id' => 2,     // Staff's user ID (who created it)
     'tax' => 5.00,
     'notes' => 'Order created by staff',
@@ -93,9 +109,10 @@ Order::create([
     ],
     "client": {
         "id": 1,
-        "name": "Admin User",
-        "role": "admin",
-        "client_id": 0
+        "company_name": "TierOne Corp",
+        "company_email": "contact@tierone.com",
+        "created_at": "2025-10-22 10:00:00",
+        "updated_at": "2025-10-22 10:00:00"
     },
     "user": {
         "id": 2,
@@ -114,14 +131,14 @@ Order::create([
 1. **User Authentication**: User logs in and gets token
 2. **Order Creation**: User creates order via API
 3. **Auto-Assignment**: System automatically assigns:
-   - `client_id` = `auth()->user()->getEffectiveClientId()`
-   - `user_id` = `auth()->id()`
+   - `client_id` = `auth()->user()->client_id` (user's client)
+   - `user_id` = `auth()->id()` (who created the order)
 4. **Multi-Tenancy**: Order belongs to the client
 5. **Audit Trail**: Order tracks who created it
 
 ### Access Control
-- **Admin**: Can see all orders for their client (`client_id = admin_id`)
-- **Staff**: Can see all orders for their client (`client_id = admin_id`)
+- **Admin**: Can see all orders for their client (`client_id = user's client_id`)
+- **Staff**: Can see all orders for their client (`client_id = user's client_id`)
 - **Both**: Can see who created each order (`user_id`)
 
 ## Use Cases
@@ -148,6 +165,12 @@ SELECT o.*, u.name as creator_name
 FROM orders o 
 JOIN users u ON o.user_id = u.id 
 WHERE o.client_id = 1 AND u.role = 'staff';
+
+-- Get orders for client 1 created by any admin
+SELECT o.*, u.name as creator_name 
+FROM orders o 
+JOIN users u ON o.user_id = u.id 
+WHERE o.client_id = 1 AND u.role = 'admin';
 ```
 
 ## Model Relationships
@@ -159,7 +182,7 @@ class Order extends Model
     // Multi-tenancy relationship
     public function client(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'client_id', 'id');
+        return $this->belongsTo(Client::class, 'client_id', 'id');
     }
     
     // Audit trail relationship
@@ -188,6 +211,24 @@ class User extends Model
 }
 ```
 
+### Client Model
+```php
+class Client extends Model
+{
+    // Users belonging to this client
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class, 'client_id', 'id');
+    }
+    
+    // Orders owned by this client
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'client_id', 'id');
+    }
+}
+```
+
 ## Testing Examples
 
 ### Test Order Creation by Admin
@@ -209,7 +250,7 @@ curl -X POST http://localhost:8000/api/orders \
 ```
 
 **Expected Result**:
-- `client_id` = admin's ID
+- `client_id` = client's ID (same as admin's client_id)
 - `user_id` = admin's ID
 
 ### Test Order Creation by Staff
@@ -231,7 +272,7 @@ curl -X POST http://localhost:8000/api/orders \
 ```
 
 **Expected Result**:
-- `client_id` = admin's ID (same as admin)
+- `client_id` = client's ID (same as staff's client_id)
 - `user_id` = staff's ID (different from admin)
 
 ## Benefits

@@ -29,7 +29,8 @@ Los desarrolladores senior aprovechan todas las herramientas disponibles para op
 
 Diseñé completamente la arquitectura del sistema desde cero:
 
-- **Multi-tenancy**: Implementé un modelo de single-database multi-tenancy donde cada usuario actúa como cliente
+- **Multi-tenancy**: Implementé un modelo de single-database multi-tenancy con client-user separation
+- **Client-User Separation**: Separación clara entre empresas (clients) e individuos (users)
 - **Roles**: Sistema de roles admin/staff con lógica de client_id apropiada
 - **Auditoría**: Campo user_id para rastrear quién creó cada orden
 - **Separación de responsabilidades**: Service/Repository pattern siguiendo SOLID principles
@@ -39,8 +40,8 @@ Diseñé completamente la arquitectura del sistema desde cero:
 Puedo explicar cada decisión técnica que tomé:
 
 - **Por qué elegí** el patrón Service/Repository para separar lógica de negocio
-- **Cómo funciona** el multi-tenancy con client_id y getEffectiveClientId()
-- **Qué decisiones** tomé en el diseño de la base de datos
+- **Cómo funciona** el multi-tenancy con client-user separation y client_id
+- **Qué decisiones** tomé en el diseño de la base de datos con tabla clients
 - **Cómo implementé** el testing con TDD mindset
 - **Por qué configuré** middleware personalizado para JSON responses
 
@@ -49,40 +50,48 @@ Puedo explicar cada decisión técnica que tomé:
 Entiendo completamente cada línea de código implementada:
 
 ```php
-// Ejemplo: Puedo explicar por qué implementé getEffectiveClientId() así
-public function getEffectiveClientId(): int
+// Ejemplo: Puedo explicar por qué implementé la lógica de client-user separation así
+public function createOrder(StoreOrderRequest $request): Order
 {
-    return $this->isAdmin() ? $this->id : $this->client_id;
+    return DB::transaction(function () use ($request) {
+        $order = Order::create([
+            'client_id' => auth()->user()->client_id, // Multi-tenancy: client ownership
+            'user_id' => auth()->id(),                 // Audit trail: who created it
+            'tax' => $request->tax,
+            'notes' => $request->notes,
+        ]);
+        // ... rest of the logic
+    });
 }
 ```
 
 Esta lógica asegura que:
-- Los admins usan su propio ID como client_id
-- Los staff usan el client_id asignado por su admin
-- Mantiene la integridad del multi-tenancy
+- Las órdenes pertenecen al cliente del usuario autenticado
+- Se rastrea quién creó cada orden para auditoría
+- Mantiene la integridad del multi-tenancy con client-user separation
 
 ## Mi Proceso de Desarrollo
 
 ### 1. Análisis y Diseño
 Primero analicé los requerimientos y diseñé la arquitectura:
-- Identifiqué la necesidad de multi-tenancy
-- Diseñé el sistema de roles
-- Planifiqué la estructura de base de datos
+- Identifiqué la necesidad de multi-tenancy con client-user separation
+- Diseñé el sistema de roles admin/staff
+- Planifiqué la estructura de base de datos con tabla clients
 - Definí los patrones de diseño a usar
 
 ### 2. Implementación Iterativa
 Implementé el sistema paso a paso:
-- Migraciones y modelos
+- Migraciones y modelos con client-user separation
 - Servicios y controladores
 - Testing completo
 - Documentación exhaustiva
 
 ### 3. Validación y Testing
 Creé un suite de testing completo:
-- Feature tests para funcionalidad end-to-end
+- Feature tests para funcionalidad end-to-end con client-user separation
 - Unit tests para lógica de negocio
 - Basic API tests para funcionalidad core
-- Factories para datos de prueba
+- Factories para datos de prueba con client-user separation
 
 ## Comparación con Herramientas Estándar
 
@@ -126,25 +135,25 @@ En desarrollo profesional, lo importante es:
 
 ### Arquitectura y Diseño
 **Pregunta**: "¿Por qué elegiste single-database multi-tenancy?"
-**Mi respuesta**: "Elegí este enfoque porque es más simple de mantener que multi-database, pero mantiene la seguridad de datos. Cada registro tiene un client_id que actúa como tenant identifier, y uso scopes para asegurar que los usuarios solo accedan a sus datos."
+**Mi respuesta**: "Elegí este enfoque porque es más simple de mantener que multi-database, pero mantiene la seguridad de datos. Implementé client-user separation donde las empresas (clients) son entidades separadas de los usuarios (users). Cada registro tiene un client_id que actúa como tenant identifier, y uso scopes para asegurar que los usuarios solo accedan a los datos de su cliente."
 
 ### Seguridad
 **Pregunta**: "¿Cómo aseguras que los usuarios no accedan a datos de otros clientes?"
-**Mi respuesta**: "Implementé el scope forAuthClient() que automáticamente filtra por el client_id efectivo del usuario autenticado. Además, uso middleware de autenticación y validación en cada endpoint."
+**Mi respuesta**: "Implementé el scope forAuthClient() que automáticamente filtra por el client_id del usuario autenticado. Con client-user separation, cada usuario pertenece a un cliente específico, y las órdenes se crean con el client_id del usuario. Además, uso middleware de autenticación y validación en cada endpoint."
 
 ### Testing
 **Pregunta**: "¿Cómo validas que el multi-tenancy funciona correctamente?"
-**Mi respuesta**: "Creé tests específicos que verifican que los usuarios no pueden acceder a órdenes de otros clientes, y que admin y staff comparten órdenes del mismo cliente. Los tests fallan si hay violación de datos."
+**Mi respuesta**: "Creé tests específicos que verifican que los usuarios no pueden acceder a órdenes de otros clientes, y que admin y staff comparten órdenes del mismo cliente. Con client-user separation, cada usuario pertenece a un cliente específico, y las órdenes se crean con el client_id del usuario. Los tests fallan si hay violación de datos."
 
 ### Performance
 **Pregunta**: "¿Cómo optimizarías esto para producción?"
-**Mi respuesta**: "Agregaría índices en client_id y user_id, implementaría caching para consultas frecuentes, usaría Redis para sesiones, y consideraría paginación para listados grandes."
+**Mi respuesta**: "Agregaría índices en client_id y user_id, implementaría caching para consultas frecuentes, usaría Redis para sesiones, y consideraría paginación para listados grandes. Con client-user separation, también optimizaría las consultas para aprovechar la separación clara entre clientes."
 
 ## El Valor Real del Proyecto
 
 ### Lo que Entregué
 - **Código de calidad profesional** siguiendo estándares de Laravel
-- **Arquitectura escalable** con multi-tenancy robusto
+- **Arquitectura escalable** con multi-tenancy robusto y client-user separation
 - **Testing completo** con TDD y diferentes tipos de pruebas
 - **Documentación exhaustiva** del proyecto y decisiones técnicas
 - **Implementación de seguridad** con autenticación y autorización
@@ -154,13 +163,13 @@ En desarrollo profesional, lo importante es:
 - **API REST**: Resources, middleware, error handling
 - **Testing**: Feature tests, unit tests, factories
 - **Arquitectura**: SOLID principles, service pattern
-- **Seguridad**: Multi-tenancy, role-based access control
+- **Seguridad**: Multi-tenancy, role-based access control, client-user separation
 
 ## Conclusión
 
 El uso de herramientas modernas de desarrollo me permitió ser más eficiente, pero la calidad y el diseño son resultado de mi experiencia y conocimiento técnico. Puedo demostrar mi competencia porque:
 
-1. **Entiendo completamente** cada parte del sistema
+1. **Entiendo completamente** cada parte del sistema con client-user separation
 2. **Puedo explicar** cada decisión técnica
 3. **Implementé** mejores prácticas de desarrollo
 4. **Creé** una solución escalable y mantenible
@@ -168,7 +177,7 @@ El uso de herramientas modernas de desarrollo me permitió ser más eficiente, p
 
 En la industria actual, los desarrolladores profesionales utilizan todas las herramientas disponibles para optimizar su productividad. Lo importante es entender lo que se está construyendo, tomar decisiones arquitectónicas correctas, y entregar código de calidad profesional.
 
-El resultado final es un sistema que demuestra mi conocimiento técnico sólido de Laravel, mi entendimiento de arquitectura de software, y mi capacidad de entregar soluciones completas y profesionales.
+El resultado final es un sistema que demuestra mi conocimiento técnico sólido de Laravel, mi entendimiento de arquitectura de software con client-user separation, y mi capacidad de entregar soluciones completas y profesionales.
 
 ---
 

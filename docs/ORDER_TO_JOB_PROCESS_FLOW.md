@@ -128,7 +128,8 @@ public function createOrder(StoreOrderRequest $request): Order
     return DB::transaction(function () use ($request) {
         // Create the order
         $order = Order::create([
-            'user_id' => auth()->id(), // Multi-tenancy
+            'client_id' => auth()->user()->client_id, // Multi-tenancy: client ownership
+            'user_id' => auth()->id(),                 // Audit trail: who created it
             'tax' => $request->tax,
             'notes' => $request->notes,
             'subtotal' => 0, // Will be calculated
@@ -172,9 +173,9 @@ public function createOrder(StoreOrderRequest $request): Order
 ```sql
 -- orders table
 INSERT INTO orders (
-    user_id, order_number, subtotal, tax, total, notes, created_at, updated_at
+    client_id, user_id, order_number, subtotal, tax, total, notes, created_at, updated_at
 ) VALUES (
-    1, 'ORD-20251022-XY7A', 2400.00, 15.50, 2415.50, 'Urgent delivery', NOW(), NOW()
+    1, 1, 'ORD-20251022-XY7A', 2400.00, 15.50, 2415.50, 'Urgent delivery', NOW(), NOW()
 );
 ```
 
@@ -242,6 +243,7 @@ public function handle(): void
             'order_id' => $this->order->id,
             'order_number' => $this->order->order_number,
             'total' => $this->order->total,
+            'client_id' => $this->order->client_id,
             'user_id' => $this->order->user_id,
         ]);
     } catch (\Exception $e) {
@@ -277,7 +279,7 @@ private function simulateInvoiceGeneration(): void
 ```php
 // storage/logs/laravel.log
 [2025-10-22 12:00:00] local.INFO: Invoice generation process completed {"order_id":1,"invoice_number":"INV-ORD-20251022-XY7A","amount":2415.50}
-[2025-10-22 12:00:00] local.INFO: Invoice generated successfully {"order_id":1,"order_number":"ORD-20251022-XY7A","total":2415.50,"user_id":1}
+[2025-10-22 12:00:00] local.INFO: Invoice generated successfully {"order_id":1,"order_number":"ORD-20251022-XY7A","total":2415.50,"client_id":1,"user_id":1}
 ```
 
 ### **Step 14: Job Completion**
@@ -301,7 +303,7 @@ DELETE FROM jobs WHERE id = 1;
 ```sql
 -- orders table: 1 record
 SELECT * FROM orders;
--- id: 1, user_id: 1, order_number: 'ORD-20251022-XY7A', total: 2415.50
+-- id: 1, client_id: 1, user_id: 1, order_number: 'ORD-20251022-XY7A', total: 2415.50
 
 -- order_items table: 1 record
 SELECT * FROM order_items;
@@ -528,8 +530,9 @@ LOG_LEVEL=debug
 - ✅ **DIP:** Dependency inversion
 
 ### **3. Multi-Tenancy:**
-- ✅ **User Isolation:** `user_id` auto-assignment
-- ✅ **Data Security:** Users only see their data
+- ✅ **Client Isolation:** `client_id` auto-assignment for data separation
+- ✅ **User Tracking:** `user_id` for audit trail
+- ✅ **Data Security:** Users only see their client's data
 - ✅ **Access Control:** Authentication required
 
 ### **4. Error Handling:**
@@ -544,8 +547,9 @@ LOG_LEVEL=debug
 
 ### **Architecture Questions:**
 1. Why is the Service layer important in this architecture?
-2. How does multi-tenancy work in this system?
+2. How does multi-tenancy work with client-user separation in this system?
 3. What are the benefits of using database transactions?
+4. How does the system ensure data isolation between clients?
 
 ### **Job Processing Questions:**
 1. Why use background jobs instead of synchronous processing?
@@ -556,6 +560,8 @@ LOG_LEVEL=debug
 1. How are order totals calculated automatically?
 2. Why is the job deleted after successful completion?
 3. How does the system handle concurrent order creation?
+4. What is the difference between `client_id` and `user_id` in orders?
+5. How does the system ensure referential integrity with foreign keys?
 
 ---
 

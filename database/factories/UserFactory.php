@@ -29,7 +29,7 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'role' => 'admin',
-            'client_id' => 1, // Default to client ID 1
+            'client_id' => \App\Models\Client::factory(), // Create a client automatically
             'remember_token' => Str::random(10),
         ];
     }
@@ -62,7 +62,7 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'role' => 'admin',
-            'client_id' => 1, // Admin users belong to client 1
+            'client_id' => \App\Models\Client::factory(), // Create a client automatically
         ]);
     }
 }

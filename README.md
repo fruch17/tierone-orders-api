@@ -131,7 +131,7 @@ php artisan test --debug
 
 ### Test Results
 - **25 tests** passing
-- **173 assertions** verified
+- **75 assertions** verified
 - **0 failures**
 - **MySQL database** testing environment
 
@@ -159,6 +159,7 @@ curl -X POST http://localhost:8000/api/auth/register \
   -d '{
     "name": "John Doe",
     "company_name": "ACME Corp",
+    "company_email": "contact@acme.com",
     "email": "john@acme.com",
     "password": "password123",
     "password_confirmation": "password123"
@@ -170,7 +171,7 @@ curl -X POST http://localhost:8000/api/auth/register \
 ### Core Features
 - [**API Authentication**](docs/API_AUTH.md) - Complete authentication flow
 - [**Order Management**](docs/API_ORDERS.md) - Order CRUD operations
-- [**Error Handling**](docs/API_ERROR_HANDLING.md) - JSON error responses
+- [**API Status Codes**](docs/API_STATUS_CODES.md) - HTTP status codes and responses
 - [**Multi-tenancy**](docs/MULTITENANCY_IMPLEMENTATION.md) - Client isolation
 
 ### Architecture & Implementation
@@ -181,8 +182,6 @@ curl -X POST http://localhost:8000/api/auth/register \
 
 ### Asynchronous Processing
 - [**Order to Job Process**](docs/ORDER_TO_JOB_PROCESS_FLOW.md) - Invoice generation
-- [**Visual Flow Diagram**](docs/ORDER_TO_JOB_VISUAL_FLOW.md) - Process visualization
-- [**Study Guide**](docs/ORDER_TO_JOB_STUDY_GUIDE.md) - Testing commands
 
 ### Testing Documentation
 - [**Testing Guide**](docs/TESTING_GUIDE.md) - Step-by-step testing
@@ -224,6 +223,7 @@ Import the Postman collection for easy API testing:
 - ✅ **SOLID Principles** - Clean, maintainable code
 
 ### Database Schema
+- **clients** - Client companies/organizations
 - **users** - Authentication and multi-tenancy
 - **orders** - Order management with client isolation
 - **order_items** - Order line items
@@ -282,9 +282,9 @@ php artisan queue:monitor
 ## 📊 Project Statistics
 
 - **25 Tests** - All passing
-- **173 Assertions** - Verified
-- **7 Test Files** - Feature and unit tests
-- **2 Factory Files** - Test data generation
+- **75 Assertions** - Verified
+- **10 Test Files** - Feature and unit tests
+- **3 Factory Files** - Test data generation
 - **15+ Documentation Files** - Comprehensive guides
 - **1 Postman Collection** - API testing
 

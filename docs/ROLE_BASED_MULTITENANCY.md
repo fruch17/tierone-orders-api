@@ -9,19 +9,21 @@ The TierOne Orders API implements a **role-based multi-tenancy system** where us
 ### 1. Admin Role (`admin`)
 - **Description**: Full system access and management capabilities
 - **Permissions**:
-  - Can register new staff members
-  - Can view all orders across the system
-  - Can manage user accounts
-  - Full CRUD operations on orders
+  - Can register new staff members for their client
+  - Can view all orders for their client
+  - Can manage staff accounts for their client
+  - Full CRUD operations on orders for their client
+  - Automatic client creation during registration
 - **Registration**: First user registered becomes admin automatically
 
 ### 2. Staff Role (`staff`)
-- **Description**: Limited access to their own data
+- **Description**: Limited access to their client's data
 - **Permissions**:
-  - Can only view their own orders
-  - Can create orders for themselves
+  - Can view orders for their client (same as admin)
+  - Can create orders for their client
   - Cannot register other users
   - Cannot access admin-only endpoints
+  - Belongs to the same client as their admin
 - **Registration**: Created by admin users only
 
 ## Role Assignment Logic
@@ -31,13 +33,17 @@ The TierOne Orders API implements a **role-based multi-tenancy system** where us
 {
   "name": "John Admin",
   "company_name": "TierOne Corp",
+  "company_email": "contact@tierone.com",
   "email": "admin@tierone.com",
   "password": "password123",
   "password_confirmation": "password123"
 }
 ```
 
-**Result**: User automatically gets `role: "admin"`
+**Result**: 
+- User automatically gets `role: "admin"`
+- Client is created with `company_name` and `company_email`
+- User is linked to the created client via `client_id`
 
 ### Staff Registration (`/api/auth/register-staff`)
 **Requires**: Admin authentication token
@@ -45,14 +51,15 @@ The TierOne Orders API implements a **role-based multi-tenancy system** where us
 ```json
 {
   "name": "Jane Staff",
-  "company_name": "TierOne Corp",
   "email": "staff@tierone.com",
   "password": "password123",
   "password_confirmation": "password123"
 }
 ```
 
-**Result**: User gets `role: "staff"`
+**Result**: 
+- User gets `role: "staff"`
+- User is linked to the same client as the admin via `client_id`
 
 ## API Endpoints by Role
 
@@ -101,14 +108,20 @@ public function canManageUsers(): bool
 
 ## Multi-Tenancy Implementation
 
+### Client-User Separation Model
+- **Clients**: Represent companies/organizations with `company_name` and `company_email`
+- **Users**: Represent individual people with personal `email` and `name`
+- **Relationship**: Users belong to clients via `client_id`
+
 ### Data Isolation
-- **Orders**: Scoped by `user_id` (tenant isolation)
+- **Orders**: Scoped by `client_id` (client ownership) and `user_id` (audit trail)
 - **Order Items**: Inherit tenant scope from parent order
-- **Users**: Each user represents a tenant/client
+- **Users**: Each user belongs to a client (tenant)
 
 ### Access Control
-- **Staff**: Can only access their own data
-- **Admin**: Can access all data (for management purposes)
+- **Staff**: Can only access data for their client
+- **Admin**: Can access all data for their client (same as staff)
+- **Both**: Can see who created each order (`user_id`)
 
 ## Example Usage Flow
 
@@ -119,6 +132,7 @@ curl -X POST http://localhost:8000/api/auth/register \
   -d '{
     "name": "Admin User",
     "company_name": "TierOne Corp",
+    "company_email": "contact@tierone.com",
     "email": "admin@tierone.com",
     "password": "password123",
     "password_confirmation": "password123"
@@ -142,7 +156,6 @@ curl -X POST http://localhost:8000/api/auth/register-staff \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
   -d '{
     "name": "Staff User",
-    "company_name": "TierOne Corp",
     "email": "staff@tierone.com",
     "password": "password123",
     "password_confirmation": "password123"
@@ -180,19 +193,33 @@ curl -X POST http://localhost:8000/api/auth/login \
 
 ## Database Schema
 
+### Clients Table
+```sql
+CREATE TABLE clients (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_name VARCHAR(255) NOT NULL,
+    company_email VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX clients_company_email_index (company_email)
+);
+```
+
 ### Users Table
 ```sql
 CREATE TABLE users (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    company_name VARCHAR(255) NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     email_verified_at TIMESTAMP NULL,
     password VARCHAR(255) NOT NULL,
-    role ENUM('admin', 'staff') DEFAULT 'staff' NOT NULL,
+    role ENUM('admin', 'staff') DEFAULT 'admin' NOT NULL,
+    client_id BIGINT UNSIGNED NULL,
     remember_token VARCHAR(100) NULL,
     created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL
+    updated_at TIMESTAMP NULL,
+    INDEX users_client_id_index (client_id),
+    FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
 );
 ```
 
@@ -200,9 +227,11 @@ CREATE TABLE users (
 
 1. **Security**: Role-based access control prevents unauthorized access
 2. **Scalability**: Easy to add new roles and permissions
-3. **Multi-tenancy**: Clear data isolation between users
+3. **Multi-tenancy**: Clear data isolation between clients
 4. **Maintainability**: Clean separation of concerns
 5. **Flexibility**: Admin can manage staff without system access
+6. **Client-User Separation**: Clear distinction between companies and individuals
+7. **Audit Trail**: Complete tracking of who created what
 
 ## Testing the System
 
@@ -211,7 +240,7 @@ CREATE TABLE users (
 # Register first user (becomes admin)
 curl -X POST http://localhost:8000/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"name":"Admin","company_name":"TierOne","email":"admin@test.com","password":"password123","password_confirmation":"password123"}'
+  -d '{"name":"Admin","company_name":"TierOne","company_email":"contact@tierone.com","email":"admin@test.com","password":"password123","password_confirmation":"password123"}'
 ```
 
 ### Test Staff Registration
@@ -225,7 +254,7 @@ curl -X POST http://localhost:8000/api/auth/login \
 curl -X POST http://localhost:8000/api/auth/register-staff \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
-  -d '{"name":"Staff","company_name":"TierOne","email":"staff@test.com","password":"password123","password_confirmation":"password123"}'
+  -d '{"name":"Staff","email":"staff@test.com","password":"password123","password_confirmation":"password123"}'
 ```
 
 ### Test Role Enforcement

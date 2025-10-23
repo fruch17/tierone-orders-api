@@ -12,10 +12,18 @@ All API responses now include the `status_code` field in the JSON body for bette
   "message": "User registered successfully",
   "user": {
     "id": 1,
-    "name": "John Doe",
-    "company_name": "ACME Logistics",
-    "email": "john@acme.com",
+    "name": "John Admin",
+    "email": "admin@tierone.com",
+    "role": "admin",
+    "client_id": 1,
     "email_verified_at": null,
+    "created_at": "2025-10-22 12:00:00",
+    "updated_at": "2025-10-22 12:00:00"
+  },
+  "client": {
+    "id": 1,
+    "company_name": "TierOne Corp",
+    "company_email": "contact@tierone.com",
     "created_at": "2025-10-22 12:00:00",
     "updated_at": "2025-10-22 12:00:00"
   },
@@ -31,9 +39,10 @@ All API responses now include the `status_code` field in the JSON body for bette
   "message": "Login successful",
   "user": {
     "id": 1,
-    "name": "John Doe",
-    "company_name": "ACME Logistics",
-    "email": "john@acme.com",
+    "name": "John Admin",
+    "email": "admin@tierone.com",
+    "role": "admin",
+    "client_id": 1,
     "email_verified_at": null,
     "created_at": "2025-10-22 12:00:00",
     "updated_at": "2025-10-22 12:00:00"
@@ -83,9 +92,10 @@ All API responses now include the `status_code` field in the JSON body for bette
 {
   "user": {
     "id": 1,
-    "name": "John Doe",
-    "company_name": "ACME Logistics",
-    "email": "john@acme.com",
+    "name": "John Admin",
+    "email": "admin@tierone.com",
+    "role": "admin",
+    "client_id": 1,
     "email_verified_at": null,
     "created_at": "2025-10-22 12:00:00",
     "updated_at": "2025-10-22 12:00:00"
@@ -94,7 +104,67 @@ All API responses now include the `status_code` field in the JSON body for bette
 }
 ```
 
-### 8. Validation Errors (422)
+### 8. Staff Registration Success (201)
+```json
+{
+  "message": "Staff member registered successfully",
+  "staff": {
+    "id": 2,
+    "name": "Jane Staff",
+    "email": "staff@tierone.com",
+    "role": "staff",
+    "client_id": 1,
+    "email_verified_at": null,
+    "created_at": "2025-10-22 12:00:00",
+    "updated_at": "2025-10-22 12:00:00"
+  },
+  "status_code": 201
+}
+```
+
+### 9. Order Creation Success (201)
+```json
+{
+  "message": "Order created successfully",
+  "order": {
+    "id": 1,
+    "order_number": "ORD-20251022-XY7A",
+    "client_id": 1,
+    "user_id": 1,
+    "subtotal": 2529.95,
+    "tax": 15.50,
+    "total": 2545.45,
+    "notes": "Urgent delivery",
+    "items": [...],
+    "client": {
+      "id": 1,
+      "company_name": "TierOne Corp",
+      "company_email": "contact@tierone.com"
+    },
+    "user": {
+      "id": 1,
+      "name": "John Admin",
+      "email": "admin@tierone.com",
+      "role": "admin",
+      "client_id": 1
+    },
+    "created_at": "2025-10-22 12:00:00",
+    "updated_at": "2025-10-22 12:00:00"
+  },
+  "status_code": 201
+}
+```
+
+### 10. Order Not Found (404)
+```json
+{
+  "message": "Order not found",
+  "error": "The requested order was not found or you do not have access to it",
+  "status_code": 404
+}
+```
+
+### 11. Validation Errors (422)
 ```json
 {
   "message": "The email has already been taken.",
@@ -130,7 +200,7 @@ curl -X POST http://localhost:8000/api/auth/login \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{
-    "email": "john@acme.com",
+    "email": "admin@tierone.com",
     "password": "password123"
   }'
 ```
@@ -139,10 +209,53 @@ curl -X POST http://localhost:8000/api/auth/login \
 ```json
 {
   "message": "Login successful",
-  "user": { ... },
+  "user": {
+    "id": 1,
+    "name": "John Admin",
+    "email": "admin@tierone.com",
+    "role": "admin",
+    "client_id": 1
+  },
   "token": "...",
   "token_type": "Bearer",
   "status_code": 200
+}
+```
+
+### Test Order Creation
+```bash
+curl -X POST http://localhost:8000/api/orders \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "tax": 15.50,
+    "notes": "Urgent delivery",
+    "items": [
+      {
+        "product_name": "Laptop",
+        "quantity": 2,
+        "unit_price": 1200.00
+      }
+    ]
+  }'
+```
+
+**Response:**
+```json
+{
+  "message": "Order created successfully",
+  "order": {
+    "id": 1,
+    "client_id": 1,
+    "user_id": 1,
+    "subtotal": 2400.00,
+    "tax": 15.50,
+    "total": 2415.50,
+    "client": { ... },
+    "user": { ... }
+  },
+  "status_code": 201
 }
 ```
 
@@ -169,6 +282,6 @@ curl -X POST http://localhost:8000/api/auth/login \
 
 ---
 
-**Status:** ✅ All API responses now include status_code field
-**Last Updated:** 2025-10-22
+**Status:** ✅ All API responses now include status_code field with updated structure
+**Last Updated:** 2025-10-23
 

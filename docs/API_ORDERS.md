@@ -57,6 +57,7 @@ Accept: application/json
   "order": {
     "id": 1,
     "order_number": "ORD-20251022-XY7A",
+    "client_id": 1,
     "user_id": 1,
     "subtotal": 2529.95,
     "tax": 15.50,
@@ -86,6 +87,22 @@ Accept: application/json
         "updated_at": "2025-10-22 12:00:00"
       }
     ],
+    "client": {
+      "id": 1,
+      "company_name": "TierOne Corp",
+      "company_email": "contact@tierone.com",
+      "created_at": "2025-10-22 12:00:00",
+      "updated_at": "2025-10-22 12:00:00"
+    },
+    "user": {
+      "id": 1,
+      "name": "John Admin",
+      "email": "admin@tierone.com",
+      "role": "admin",
+      "client_id": 1,
+      "created_at": "2025-10-22 12:00:00",
+      "updated_at": "2025-10-22 12:00:00"
+    },
     "created_at": "2025-10-22 12:00:00",
     "updated_at": "2025-10-22 12:00:00"
   },
@@ -135,6 +152,7 @@ Accept: application/json
   "order": {
     "id": 1,
     "order_number": "ORD-20251022-XY7A",
+    "client_id": 1,
     "user_id": 1,
     "subtotal": 2529.95,
     "tax": 15.50,
@@ -153,6 +171,22 @@ Accept: application/json
         "updated_at": "2025-10-22 12:00:00"
       }
     ],
+    "client": {
+      "id": 1,
+      "company_name": "TierOne Corp",
+      "company_email": "contact@tierone.com",
+      "created_at": "2025-10-22 12:00:00",
+      "updated_at": "2025-10-22 12:00:00"
+    },
+    "user": {
+      "id": 1,
+      "name": "John Admin",
+      "email": "admin@tierone.com",
+      "role": "admin",
+      "client_id": 1,
+      "created_at": "2025-10-22 12:00:00",
+      "updated_at": "2025-10-22 12:00:00"
+    },
     "created_at": "2025-10-22 12:00:00",
     "updated_at": "2025-10-22 12:00:00"
   },
@@ -190,24 +224,58 @@ Accept: application/json
     {
       "id": 1,
       "order_number": "ORD-20251022-XY7A",
+      "client_id": 1,
       "user_id": 1,
       "subtotal": 2529.95,
       "tax": 15.50,
       "total": 2545.45,
       "notes": "Urgent delivery to warehouse 5",
       "items": [...],
+      "client": {
+        "id": 1,
+        "company_name": "TierOne Corp",
+        "company_email": "contact@tierone.com",
+        "created_at": "2025-10-22 12:00:00",
+        "updated_at": "2025-10-22 12:00:00"
+      },
+      "user": {
+        "id": 1,
+        "name": "John Admin",
+        "email": "admin@tierone.com",
+        "role": "admin",
+        "client_id": 1,
+        "created_at": "2025-10-22 12:00:00",
+        "updated_at": "2025-10-22 12:00:00"
+      },
       "created_at": "2025-10-22 12:00:00",
       "updated_at": "2025-10-22 12:00:00"
     },
     {
       "id": 2,
       "order_number": "ORD-20251021-AB3C",
-      "user_id": 1,
+      "client_id": 1,
+      "user_id": 2,
       "subtotal": 1200.00,
       "tax": 10.00,
       "total": 1210.00,
       "notes": null,
       "items": [...],
+      "client": {
+        "id": 1,
+        "company_name": "TierOne Corp",
+        "company_email": "contact@tierone.com",
+        "created_at": "2025-10-22 12:00:00",
+        "updated_at": "2025-10-22 12:00:00"
+      },
+      "user": {
+        "id": 2,
+        "name": "Jane Staff",
+        "email": "staff@tierone.com",
+        "role": "staff",
+        "client_id": 1,
+        "created_at": "2025-10-22 12:00:00",
+        "updated_at": "2025-10-22 12:00:00"
+      },
       "created_at": "2025-10-21 10:30:00",
       "updated_at": "2025-10-21 10:30:00"
     }
@@ -223,7 +291,7 @@ Accept: application/json
 
 **Endpoint:** `GET /api/clients/{id}/orders`
 
-**Description:** Retrieve all orders for a specific client (only if {id} matches authenticated user)
+**Description:** Retrieve all orders for a specific client. Both admin and staff users can access orders for their client.
 
 **Headers:**
 ```
@@ -236,10 +304,8 @@ Accept: application/json
 {
   "client": {
     "id": 1,
-    "name": "John Doe",
-    "company_name": "ACME Logistics",
-    "email": "john@acme.com",
-    "email_verified_at": null,
+    "company_name": "TierOne Corp",
+    "company_email": "contact@tierone.com",
     "created_at": "2025-10-22 12:00:00",
     "updated_at": "2025-10-22 12:00:00"
   },
@@ -247,12 +313,29 @@ Accept: application/json
     {
       "id": 1,
       "order_number": "ORD-20251022-XY7A",
+      "client_id": 1,
       "user_id": 1,
       "subtotal": 2529.95,
       "tax": 15.50,
       "total": 2545.45,
       "notes": "Urgent delivery to warehouse 5",
       "items": [...],
+      "client": {
+        "id": 1,
+        "company_name": "TierOne Corp",
+        "company_email": "contact@tierone.com",
+        "created_at": "2025-10-22 12:00:00",
+        "updated_at": "2025-10-22 12:00:00"
+      },
+      "user": {
+        "id": 1,
+        "name": "John Admin",
+        "email": "admin@tierone.com",
+        "role": "admin",
+        "client_id": 1,
+        "created_at": "2025-10-22 12:00:00",
+        "updated_at": "2025-10-22 12:00:00"
+      },
       "created_at": "2025-10-22 12:00:00",
       "updated_at": "2025-10-22 12:00:00"
     }
@@ -333,9 +416,11 @@ curl -X GET http://localhost:8000/api/clients/1/orders \
 - **Order Number:** Auto-generated in format `ORD-YYYYMMDD-XXXX`
 
 ### ✅ Multi-Tenancy Security
-- **User Isolation:** Users can only see and manage their own orders
-- **Auto-Assignment:** New orders are automatically assigned to authenticated user
-- **Access Control:** All endpoints enforce user-based access control
+- **Client Isolation:** Orders are scoped by `client_id` for proper multi-tenancy
+- **User Tracking:** Each order tracks both `client_id` (for multi-tenancy) and `user_id` (for audit trail)
+- **Role-based Access:** Admin and staff users can access orders for their client
+- **Access Control:** All endpoints enforce client-based access control
+- **Data Separation:** Complete isolation between different clients
 
 ### ✅ Background Processing
 - **Invoice Generation:** When an order is created, `GenerateInvoiceJob` is dispatched
@@ -388,7 +473,10 @@ curl -X GET http://localhost:8000/api/clients/1/orders \
 - Items are automatically linked to their parent order
 - Background job for invoice generation is triggered on order creation
 - All timestamps are in `Y-m-d H:i:s` format
-- Multi-tenancy ensures complete data isolation between users
+- **Multi-tenancy:** Orders are scoped by `client_id` for proper data isolation
+- **Audit Trail:** Each order tracks `user_id` to know who created it
+- **Client-User Model:** Admin and staff users belong to clients and share access to client orders
+- **Data Relationships:** Orders include both `client` and `user` information in responses
 
 ---
 

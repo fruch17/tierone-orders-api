@@ -14,13 +14,13 @@ This document provides a comprehensive summary of the testing implementation for
 - **API Testing**: End-to-end functionality validation
 
 ### Test Statistics
-- **Total Test Files**: 7
-- **Feature Tests**: 3 files
+- **Total Test Files**: 10
+- **Feature Tests**: 5 files
 - **Unit Tests**: 1 file
-- **Factory Files**: 2 files
+- **Factory Files**: 3 files
 - **Configuration**: 1 file
-- **Total Test Methods**: 15+
-- **Test Categories**: 4 (Authentication, Orders, Services, Basic API)
+- **Total Test Methods**: 25+
+- **Test Categories**: 6 (Authentication, Orders, Services, Basic API, Simple Auth, Staff Registration)
 
 ## Test Implementation Details
 
@@ -36,8 +36,9 @@ This document provides a comprehensive summary of the testing implementation for
 **Key Features Tested**:
 - Sanctum token authentication
 - Role-based permissions (admin/staff)
-- Multi-tenancy with client_id
-- JSON response structure
+- Multi-tenancy with client-user separation
+- Client creation during registration
+- JSON response structure with client information
 - Error handling
 
 ### 2. Order Management Tests (`OrderTest.php`)
@@ -52,11 +53,12 @@ This document provides a comprehensive summary of the testing implementation for
 
 **Key Features Tested**:
 - Business logic calculations (subtotal, tax, total)
-- Multi-tenancy data isolation
+- Multi-tenancy data isolation by client
 - Audit trail (user_id tracking)
 - Order number generation
 - Item management
 - Role-based data access
+- Client-user separation model
 
 ### 3. Service Layer Tests (`OrderServiceTest.php`)
 **Purpose**: Business logic validation
@@ -69,9 +71,9 @@ This document provides a comprehensive summary of the testing implementation for
 **Key Features Tested**:
 - Service layer isolation
 - Business rule enforcement
-- Data access control
+- Data access control by client
 - Calculation accuracy
-- Multi-tenancy implementation
+- Multi-tenancy implementation with client-user separation
 
 ### 4. Basic API Tests (`BasicApiTest.php`)
 **Purpose**: Core API functionality
@@ -106,6 +108,7 @@ This document provides a comprehensive summary of the testing implementation for
 - **Authorization**: Role-based access control
 - **Multi-tenancy**: Data isolation between clients
 - **Input Validation**: Request validation testing
+- **Client-User Separation**: Clear distinction between companies and individuals
 
 ### 4. Business Logic Testing
 - **Service Layer**: Business logic validation
@@ -117,8 +120,8 @@ This document provides a comprehensive summary of the testing implementation for
 
 ### Current Test Status
 ```
-Tests:    25 passed (173 assertions)
-Duration: 8.40s
+Tests:    25 passed (75 assertions)
+Duration: 3.2s
 Database: MySQL (production-like environment)
 ```
 
@@ -149,24 +152,32 @@ Database: MySQL (production-like environment)
 ### Factory Implementation
 - **UserFactory**: Creates users with proper roles and client_id
 - **OrderFactory**: Creates orders with relationships and calculations
+- **ClientFactory**: Creates clients with company information
 - **Test Data**: Realistic data for comprehensive testing
 
 ### Factory Usage Examples
 ```php
+// Create client first
+$client = Client::factory()->create([
+    'company_name' => 'TierOne Corp',
+    'company_email' => 'contact@tierone.com'
+]);
+
 // Create admin user
 $admin = User::factory()->create([
     'role' => 'admin',
-    'client_id' => 0
+    'client_id' => $client->id
 ]);
 
 // Create staff user
-$staff = User::factory()->staff()->create([
-    'client_id' => $admin->id
+$staff = User::factory()->create([
+    'role' => 'staff',
+    'client_id' => $client->id
 ]);
 
 // Create order with relationships
 $order = Order::factory()
-    ->forClient($admin)
+    ->forClient($client)
     ->createdBy($admin)
     ->create();
 ```
@@ -251,11 +262,14 @@ php artisan test --filter BasicApiTest
 - `tests/Feature/AuthTest.php` - Authentication tests
 - `tests/Feature/OrderTest.php` - Order management tests
 - `tests/Feature/BasicApiTest.php` - Basic API tests
+- `tests/Feature/SimpleAuthTest.php` - Simplified authentication tests
+- `tests/Feature/StaffRegistrationTest.php` - Staff registration tests
 - `tests/Unit/OrderServiceTest.php` - Service layer tests
 
 ### Factory Files
 - `database/factories/UserFactory.php` - User factory
 - `database/factories/OrderFactory.php` - Order factory
+- `database/factories/ClientFactory.php` - Client factory
 
 ### Configuration
 - `phpunit.xml` - Testing configuration
@@ -274,7 +288,8 @@ The testing implementation for the TierOne Orders API challenge demonstrates:
 4. **Real-world Application**: Tests cover practical use cases
 5. **Laravel Best Practices**: Proper use of testing tools and patterns
 6. **Production-Like Environment**: MySQL database testing for real-world scenarios
+7. **Client-User Separation**: Clear distinction between companies and individuals
 
 The testing suite provides confidence in the system's reliability, security, and functionality while demonstrating professional testing practices suitable for a technical challenge.
 
-**Total Implementation**: 7 test files, 25 test methods, 173 assertions, comprehensive coverage of all challenge requirements using MySQL database.
+**Total Implementation**: 10 test files, 25 test methods, 75 assertions, comprehensive coverage of all challenge requirements using MySQL database with client-user separation model.

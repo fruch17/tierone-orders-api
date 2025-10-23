@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Http\Requests\StoreOrderRequest;
 use App\Models\Order;
 use App\Models\User;
+use App\Models\Client;
 use App\Services\OrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -27,10 +28,13 @@ class OrderServiceTest extends TestCase
      */
     public function test_create_order_calculates_totals_correctly(): void
     {
+        // Create client first
+        $client = Client::factory()->create();
+        
         // Create authenticated user
         $user = User::factory()->create([
             'role' => 'admin',
-            'client_id' => 0
+            'client_id' => $client->id
         ]);
         $this->actingAs($user);
 
@@ -64,7 +68,7 @@ class OrderServiceTest extends TestCase
         $this->assertInstanceOf(Order::class, $order);
         $this->assertDatabaseHas('orders', [
             'id' => $order->id,
-            'client_id' => $user->id,
+            'client_id' => $user->client_id,
             'user_id' => $user->id,
             'tax' => 10.00,
             'notes' => 'Test order'
@@ -89,17 +93,21 @@ class OrderServiceTest extends TestCase
      */
     public function test_get_orders_respects_multi_tenancy(): void
     {
-        // Create two users
-        $user1 = User::factory()->create(['role' => 'admin', 'client_id' => 0]);
-        $user2 = User::factory()->create(['role' => 'admin', 'client_id' => 0]);
+        // Create clients first
+        $client1 = Client::factory()->create();
+        $client2 = Client::factory()->create();
+
+        // Create two users with different clients
+        $user1 = User::factory()->create(['role' => 'admin', 'client_id' => $client1->id]);
+        $user2 = User::factory()->create(['role' => 'admin', 'client_id' => $client2->id]);
 
         // Create orders for both users
         Order::factory()->count(2)->create([
-            'client_id' => $user1->id,
+            'client_id' => $client1->id,
             'user_id' => $user1->id
         ]);
         Order::factory()->count(3)->create([
-            'client_id' => $user2->id,
+            'client_id' => $client2->id,
             'user_id' => $user2->id
         ]);
 
@@ -125,21 +133,24 @@ class OrderServiceTest extends TestCase
      */
     public function test_staff_and_admin_share_client_orders(): void
     {
+        // Create client first
+        $client = Client::factory()->create();
+
         // Create admin
         $admin = User::factory()->create([
             'role' => 'admin',
-            'client_id' => 0
+            'client_id' => $client->id
         ]);
 
-        // Create staff belonging to admin
+        // Create staff belonging to same client
         $staff = User::factory()->create([
             'role' => 'staff',
-            'client_id' => $admin->id
+            'client_id' => $client->id
         ]);
 
-        // Create orders for admin's client
+        // Create orders for client
         Order::factory()->count(2)->create([
-            'client_id' => $admin->id,
+            'client_id' => $client->id,
             'user_id' => $admin->id
         ]);
 
@@ -165,13 +176,17 @@ class OrderServiceTest extends TestCase
      */
     public function test_get_order_by_id_respects_multi_tenancy(): void
     {
-        // Create two users
-        $user1 = User::factory()->create(['role' => 'admin', 'client_id' => 0]);
-        $user2 = User::factory()->create(['role' => 'admin', 'client_id' => 0]);
+        // Create clients first
+        $client1 = Client::factory()->create();
+        $client2 = Client::factory()->create();
 
-        // Create order for user2
+        // Create two users with different clients
+        $user1 = User::factory()->create(['role' => 'admin', 'client_id' => $client1->id]);
+        $user2 = User::factory()->create(['role' => 'admin', 'client_id' => $client2->id]);
+
+        // Create order for user2's client
         $order = Order::factory()->create([
-            'client_id' => $user2->id,
+            'client_id' => $client2->id,
             'user_id' => $user2->id
         ]);
 

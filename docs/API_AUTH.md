@@ -2,10 +2,20 @@
 
 ## Overview
 
-The TierOne Orders API uses **Laravel Sanctum** for token-based authentication. The system implements **role-based multi-tenancy** with two user types:
+The TierOne Orders API uses **Laravel Sanctum** for token-based authentication. The system implements **role-based multi-tenancy** with a **client-user separation** model:
 
-- **Admin**: Full system access, can register staff members
-- **Staff**: Limited access to their own data
+- **Clients**: Represent companies/organizations (with `company_name` and `company_email`)
+- **Users**: Represent individual people (with personal `email` and `name`)
+- **Admin**: Full system access, can register staff members, belongs to their own client
+- **Staff**: Limited access to their own data, belongs to the same client as their admin
+
+### Key Features
+
+- **Client-User Separation**: Companies and individuals are separate entities
+- **Automatic Client Creation**: When an admin registers, a client is automatically created
+- **Multi-tenancy**: All data is scoped by `client_id` for proper isolation
+- **Role-based Access**: Different permissions based on user role
+- **Token-based Authentication**: Secure API access using Laravel Sanctum
 
 ## Endpoints
 
@@ -13,13 +23,14 @@ The TierOne Orders API uses **Laravel Sanctum** for token-based authentication. 
 
 **Endpoint**: `POST /api/auth/register`
 
-**Description**: Register a new admin user. The first registered user automatically becomes an admin.
+**Description**: Register a new admin user. This creates both a **client** (company) and a **user** (admin) record. The user is automatically linked to the created client.
 
 **Request Body**:
 ```json
 {
   "name": "John Admin",
   "company_name": "TierOne Corp",
+  "company_email": "contact@tierone.com",
   "email": "admin@tierone.com",
   "password": "password123",
   "password_confirmation": "password123"
@@ -33,14 +44,22 @@ The TierOne Orders API uses **Laravel Sanctum** for token-based authentication. 
   "user": {
     "id": 1,
     "name": "John Admin",
-    "company_name": "TierOne Corp",
     "email": "admin@tierone.com",
     "role": "admin",
+    "client_id": 1,
     "email_verified_at": null,
     "created_at": "2025-10-22 13:08:38",
     "updated_at": "2025-10-22 13:08:38"
   },
+  "client": {
+    "id": 1,
+    "company_name": "TierOne Corp",
+    "company_email": "contact@tierone.com",
+    "created_at": "2025-10-22 13:08:38",
+    "updated_at": "2025-10-22 13:08:38"
+  },
   "token": "1|abc123def456ghi789jkl012mno345pqr678stu901vwx234yz",
+  "token_type": "Bearer",
   "status_code": 201
 }
 ```
@@ -52,6 +71,7 @@ curl -X POST http://localhost:8000/api/auth/register \
   -d '{
     "name": "John Admin",
     "company_name": "TierOne Corp",
+    "company_email": "contact@tierone.com",
     "email": "admin@tierone.com",
     "password": "password123",
     "password_confirmation": "password123"
@@ -62,7 +82,7 @@ curl -X POST http://localhost:8000/api/auth/register \
 
 **Endpoint**: `POST /api/auth/register-staff`
 
-**Description**: Register a new staff user. **Requires admin authentication**.
+**Description**: Register a new staff user. **Requires admin authentication**. The staff user will belong to the same client as the admin who registers them.
 
 **Headers**:
 ```
@@ -87,9 +107,9 @@ Content-Type: application/json
   "staff": {
     "id": 2,
     "name": "Jane Staff",
-    "company_name": "TierOne Corp",
     "email": "staff@tierone.com",
     "role": "staff",
+    "client_id": 1,
     "email_verified_at": null,
     "created_at": "2025-10-22 13:08:38",
     "updated_at": "2025-10-22 13:08:38"
@@ -132,14 +152,15 @@ curl -X POST http://localhost:8000/api/auth/register-staff \
   "user": {
     "id": 1,
     "name": "John Admin",
-    "company_name": "TierOne Corp",
     "email": "admin@tierone.com",
     "role": "admin",
+    "client_id": 1,
     "email_verified_at": null,
     "created_at": "2025-10-22 13:08:38",
     "updated_at": "2025-10-22 13:08:38"
   },
   "token": "2|def456ghi789jkl012mno345pqr678stu901vwx234yz567",
+  "token_type": "Bearer",
   "status_code": 200
 }
 ```
@@ -196,9 +217,9 @@ Authorization: Bearer {token}
   "user": {
     "id": 1,
     "name": "John Admin",
-    "company_name": "TierOne Corp",
     "email": "admin@tierone.com",
     "role": "admin",
+    "client_id": 1,
     "email_verified_at": null,
     "created_at": "2025-10-22 13:08:38",
     "updated_at": "2025-10-22 13:08:38"
@@ -253,6 +274,30 @@ curl -X GET http://localhost:8000/api/auth/me \
 }
 ```
 
+## Data Structure Changes
+
+### Client-User Separation
+
+The API now implements a **client-user separation** model:
+
+- **Clients**: Represent companies/organizations with `company_name` and `company_email`
+- **Users**: Represent individual people with personal `email` and `name`
+- **Relationship**: Users belong to clients via `client_id`
+
+### Registration Process
+
+When an admin registers:
+
+1. **Client Creation**: A new client record is created with company information
+2. **User Creation**: A new user record is created and linked to the client
+3. **Response**: Both user and client data are returned
+
+### Multi-tenancy
+
+- **Admin Users**: Belong to their own client (the one they created)
+- **Staff Users**: Belong to the same client as the admin who registered them
+- **Data Isolation**: All orders and data are scoped by `client_id`
+
 ## Role-Based Access Control
 
 ### Admin Users
@@ -293,6 +338,7 @@ curl -X POST http://localhost:8000/api/auth/register \
   -d '{
     "name": "Test Admin",
     "company_name": "Test Corp",
+    "company_email": "contact@testcorp.com",
     "email": "admin@test.com",
     "password": "password123",
     "password_confirmation": "password123"

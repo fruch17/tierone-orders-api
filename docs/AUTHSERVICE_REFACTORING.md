@@ -51,14 +51,16 @@ class AuthController extends Controller
 ## AuthService Methods
 
 ### 1. `registerUser(RegisterRequest $request): array`
-- **Purpose**: Register a new admin user
-- **Returns**: Array with user data and token
-- **Business Logic**: User creation, password hashing, token generation
+- **Purpose**: Register a new admin user and create associated client
+- **Returns**: Array with user data, client data, and token
+- **Business Logic**: Client creation, user creation, password hashing, token generation
+- **Multi-tenancy**: Creates both Client and User records, links them via client_id
 
 ### 2. `registerStaff(RegisterStaffRequest $request): UserResource`
 - **Purpose**: Register a new staff member (admin only)
 - **Returns**: UserResource of created staff
-- **Business Logic**: Staff creation with proper client_id assignment
+- **Business Logic**: Staff creation with proper client_id assignment from admin's client
+- **Multi-tenancy**: Staff belongs to the same client as the admin who registers them
 
 ### 3. `authenticateUser(array $credentials): ?array`
 - **Purpose**: Authenticate user and generate token
@@ -74,6 +76,50 @@ class AuthController extends Controller
 - **Purpose**: Get current authenticated user
 - **Returns**: UserResource of current user
 - **Business Logic**: User data formatting
+
+## Client-User Separation Architecture
+
+### New Multi-Tenancy Model
+
+The AuthService now implements a **client-user separation** model:
+
+#### **Client Model**
+- Represents companies/organizations
+- Contains `company_name` and `company_email`
+- Acts as the tenant boundary for multi-tenancy
+
+#### **User Model**
+- Represents individual people
+- Contains personal `email` and `name`
+- Belongs to a client via `client_id`
+- Has roles: `admin` or `staff`
+
+#### **Registration Process**
+1. **Admin Registration**: Creates both Client and User records
+2. **Staff Registration**: Creates User record linked to admin's client
+3. **Data Isolation**: All data scoped by `client_id`
+
+### Benefits of Client-User Separation
+
+#### **1. Clear Data Boundaries**
+```php
+// Admin and staff share the same client
+$admin = User::where('role', 'admin')->where('client_id', 1)->first();
+$staff = User::where('role', 'staff')->where('client_id', 1)->first();
+
+// Both can access orders for client_id = 1
+$orders = Order::where('client_id', 1)->get();
+```
+
+#### **2. Scalable Multi-Tenancy**
+- Each client is completely isolated
+- Easy to add new clients without affecting existing ones
+- Clear ownership of data and resources
+
+#### **3. Role-Based Access Control**
+- Admin: Full access to their client's data
+- Staff: Limited access to their client's data
+- Cross-client access is prevented by design
 
 ## Benefits of Refactoring
 
@@ -135,6 +181,7 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'User registered successfully',
                 'user' => $result['user'],
+                'client' => $result['client'],
                 'token' => $result['token'],
                 'token_type' => $result['token_type'],
                 'status_code' => 201,
@@ -179,22 +226,45 @@ class AuthService
     {
         $validated = $request->validated();
 
+        // Create client first
+        $client = Client::create([
+            'company_name' => $validated['company_name'],
+            'company_email' => $validated['company_email'],
+        ]);
+
+        // Create new user (admin) and link to client
         $user = User::create([
             'name' => $validated['name'],
-            'company_name' => $validated['company_name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role' => $validated['role'] ?? 'admin',
-            'client_id' => $validated['client_id'] ?? 0,
+            'role' => 'admin',
+            'client_id' => $client->id, // Link user to client
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return [
             'user' => new UserResource($user),
+            'client' => new ClientResource($client),
             'token' => $token,
             'token_type' => 'Bearer'
         ];
+    }
+
+    public function registerStaff(RegisterStaffRequest $request): UserResource
+    {
+        $validatedData = $request->validated();
+
+        // Create staff user with role 'staff'
+        $staff = User::create([
+            'name' => $validatedData['name'],
+            'email' => $validatedData['email'],
+            'password' => Hash::make($validatedData['password']),
+            'role' => 'staff', // Staff role assigned
+            'client_id' => auth()->user()->client_id, // Staff belongs to the same client as admin
+        ]);
+
+        return new UserResource($staff);
     }
 
     public function authenticateUser(array $credentials): ?array
@@ -295,5 +365,15 @@ This refactoring brings the authentication system in line with the rest of the a
 - **Improved maintainability** with clear responsibilities
 - **Enhanced reusability** of authentication logic
 - **SOLID compliance** throughout the codebase
+- **Client-User Separation** for proper multi-tenancy
+- **Scalable Architecture** supporting multiple clients and users
 
-The API remains fully functional with the same endpoints and responses, but now with a much cleaner and more maintainable architecture! 🚀
+### Key Architectural Improvements
+
+1. **Service Layer Pattern**: AuthService handles all business logic
+2. **Client-User Model**: Clear separation between companies and individuals
+3. **Multi-Tenancy**: Proper data isolation via client_id
+4. **Role-Based Access**: Admin and staff roles with appropriate permissions
+5. **Automatic Client Creation**: Seamless client creation during admin registration
+
+The API remains fully functional with the same endpoints and responses, but now with a much cleaner, more maintainable, and scalable architecture! 🚀

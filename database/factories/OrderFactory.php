@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Order;
 use App\Models\User;
+use App\Models\Client;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -26,7 +27,7 @@ class OrderFactory extends Factory
     public function definition(): array
     {
         return [
-            'client_id' => User::factory(),
+            'client_id' => Client::factory(),
             'user_id' => User::factory(),
             'order_number' => 'ORD-' . now()->format('Ymd') . '-' . strtoupper($this->faker->bothify('????')),
             'subtotal' => $this->faker->randomFloat(2, 10, 1000),
@@ -41,7 +42,7 @@ class OrderFactory extends Factory
     /**
      * Indicate that the order belongs to a specific client.
      */
-    public function forClient(User $client): static
+    public function forClient(Client $client): static
     {
         return $this->state(fn (array $attributes) => [
             'client_id' => $client->id,

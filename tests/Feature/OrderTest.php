@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Order;
 use App\Models\User;
+use App\Models\Client;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -17,10 +18,13 @@ class OrderTest extends TestCase
      */
     public function test_user_can_create_order(): void
     {
+        // Create client first
+        $client = Client::factory()->create();
+        
         // Create authenticated user
         $user = User::factory()->create([
             'role' => 'admin',
-            'client_id' => 0
+            'client_id' => $client->id
         ]);
 
         $orderData = [
@@ -75,7 +79,7 @@ class OrderTest extends TestCase
 
         // Verify order was created in database
         $this->assertDatabaseHas('orders', [
-            'client_id' => $user->id,
+            'client_id' => $user->client_id,
             'user_id' => $user->id,
             'tax' => 15.50,
             'notes' => 'Urgent delivery'
@@ -88,11 +92,14 @@ class OrderTest extends TestCase
      */
     public function test_user_can_get_orders(): void
     {
+        // Create client first
+        $client = Client::factory()->create();
+        
         // Create user and orders
-        $user = User::factory()->create(['role' => 'admin', 'client_id' => 0]);
+        $user = User::factory()->create(['role' => 'admin', 'client_id' => $client->id]);
         
         Order::factory()->count(3)->create([
-            'client_id' => $user->id,
+            'client_id' => $client->id,
             'user_id' => $user->id
         ]);
 
@@ -125,10 +132,13 @@ class OrderTest extends TestCase
      */
     public function test_user_can_get_single_order(): void
     {
+        // Create client first
+        $client = Client::factory()->create();
+        
         // Create user and order
-        $user = User::factory()->create(['role' => 'admin', 'client_id' => 0]);
+        $user = User::factory()->create(['role' => 'admin', 'client_id' => $client->id]);
         $order = Order::factory()->create([
-            'client_id' => $user->id,
+            'client_id' => $client->id,
             'user_id' => $user->id
         ]);
 
@@ -159,13 +169,17 @@ class OrderTest extends TestCase
      */
     public function test_user_cannot_access_other_user_orders(): void
     {
-        // Create two users
-        $user1 = User::factory()->create(['role' => 'admin', 'client_id' => 0]);
-        $user2 = User::factory()->create(['role' => 'admin', 'client_id' => 0]);
+        // Create clients first
+        $client1 = Client::factory()->create();
+        $client2 = Client::factory()->create();
+        
+        // Create two users with different clients
+        $user1 = User::factory()->create(['role' => 'admin', 'client_id' => $client1->id]);
+        $user2 = User::factory()->create(['role' => 'admin', 'client_id' => $client2->id]);
 
-        // Create order for user2
+        // Create order for user2's client
         $order = Order::factory()->create([
-            'client_id' => $user2->id,
+            'client_id' => $client2->id,
             'user_id' => $user2->id
         ]);
 
@@ -186,21 +200,24 @@ class OrderTest extends TestCase
      */
     public function test_admin_and_staff_share_orders(): void
     {
+        // Create client first
+        $client = Client::factory()->create();
+        
         // Create admin
         $admin = User::factory()->create([
             'role' => 'admin',
-            'client_id' => 0
+            'client_id' => $client->id
         ]);
 
-        // Create staff belonging to admin
+        // Create staff belonging to same client
         $staff = User::factory()->create([
             'role' => 'staff',
-            'client_id' => $admin->id
+            'client_id' => $client->id
         ]);
 
-        // Create order for admin's client
+        // Create order for client
         $order = Order::factory()->create([
-            'client_id' => $admin->id,
+            'client_id' => $client->id,
             'user_id' => $admin->id
         ]);
 

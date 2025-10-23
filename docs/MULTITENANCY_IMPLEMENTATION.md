@@ -6,22 +6,37 @@ The TierOne Orders API implements a **true multi-tenancy system** using `client_
 
 ## Multi-Tenancy Architecture
 
+## Multi-Tenancy Architecture
+
 ### Database Schema
+
+#### Clients Table
+```sql
+CREATE TABLE clients (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_name VARCHAR(255) NOT NULL,
+    company_email VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX clients_company_email_index (company_email)
+);
+```
 
 #### Users Table
 ```sql
 CREATE TABLE users (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    company_name VARCHAR(255) NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     email_verified_at TIMESTAMP NULL,
     password VARCHAR(255) NOT NULL,
-    role ENUM('admin', 'staff') DEFAULT 'staff' NOT NULL,
-    client_id BIGINT UNSIGNED DEFAULT 0 NOT NULL,
+    role ENUM('admin', 'staff') DEFAULT 'admin' NOT NULL,
+    client_id BIGINT UNSIGNED NULL,
     remember_token VARCHAR(100) NULL,
     created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL
+    updated_at TIMESTAMP NULL,
+    INDEX users_client_id_index (client_id),
+    FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
 );
 ```
 
@@ -30,6 +45,7 @@ CREATE TABLE users (
 CREATE TABLE orders (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     client_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
     order_number VARCHAR(255) UNIQUE NOT NULL,
     subtotal DECIMAL(10,2) NOT NULL,
     tax DECIMAL(10,2) DEFAULT 0 NOT NULL,
@@ -37,89 +53,108 @@ CREATE TABLE orders (
     notes TEXT NULL,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
-    INDEX orders_client_id_index (client_id)
+    INDEX orders_client_id_index (client_id),
+    INDEX orders_user_id_index (user_id),
+    INDEX orders_client_created_index (client_id, created_at),
+    FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 ```
 
 ### Multi-Tenancy Logic
 
+#### Client-User Separation Model
+The system implements a **client-user separation** model where:
+
+- **Clients**: Represent companies/organizations with `company_name` and `company_email`
+- **Users**: Represent individual people with personal `email` and `name`
+- **Relationship**: Users belong to clients via `client_id`
+
 #### Client ID Assignment
-- **Admin Users**: `client_id = 0` (they are their own client)
-- **Staff Users**: `client_id = admin_id` (they belong to an admin's client)
+- **Admin Users**: Belong to their own client (created during registration)
+- **Staff Users**: Belong to the same client as the admin who registered them
 
-#### Effective Client ID
-The system uses `getEffectiveClientId()` method to determine which client's data a user can access:
+#### Data Isolation
+All data is scoped by `client_id`:
+- **Orders**: `client_id` determines which client owns the order
+- **Users**: `client_id` determines which client the user belongs to
+- **Access Control**: Users can only access data for their client
 
-```php
-public function getEffectiveClientId(): int
-{
-    if ($this->isAdmin()) {
-        return $this->id; // Admin is their own client
-    }
-    
-    return $this->client_id; // Staff belongs to admin's client
-}
-```
+## User Roles and Permissions
 
 ## User Roles and Permissions
 
 ### Admin Users
-- **Client ID**: `0` (stored in database)
-- **Effective Client ID**: Their own user ID
+- **Client ID**: Points to their own client (created during registration)
 - **Permissions**:
-  - Can register staff members
+  - Can register staff members for their client
   - Can create orders for their client
   - Can view all orders for their client
   - Can manage staff accounts
   - Full CRUD operations on orders
+  - Automatic client creation during registration
 
 ### Staff Users
-- **Client ID**: Admin's user ID (stored in database)
-- **Effective Client ID**: Admin's user ID (same as their client_id)
+- **Client ID**: Points to the same client as their admin
 - **Permissions**:
-  - Can create orders for their admin's client
-  - Can view orders for their admin's client
+  - Can create orders for their client
+  - Can view orders for their client
   - Cannot register other users
   - Cannot access admin-only endpoints
+  - Limited to their client's data only
 
 ## Data Isolation Examples
 
-### Scenario 1: Admin User (ID: 1)
+### Scenario 1: Admin User Registration
 ```php
+// When admin registers, both client and user are created
+// Client record
+{
+    "id": 1,
+    "company_name": "TierOne Corp",
+    "company_email": "contact@tierone.com"
+}
+
 // User record
 {
     "id": 1,
     "name": "Admin User",
     "role": "admin",
-    "client_id": 0
+    "client_id": 1  // Points to the created client
 }
 
-// Effective client ID = 1 (their own ID)
 // Can access orders where client_id = 1
 ```
 
-### Scenario 2: Staff User (ID: 2)
+### Scenario 2: Staff User Registration
 ```php
+// Staff is registered by admin and belongs to same client
 // User record
 {
     "id": 2,
     "name": "Staff User",
     "role": "staff",
-    "client_id": 1  // Belongs to admin with ID 1
+    "client_id": 1  // Same client as admin
 }
 
-// Effective client ID = 1 (same as client_id)
-// Can access orders where client_id = 1
+// Can access orders where client_id = 1 (same as admin)
 ```
 
-### Scenario 3: Multiple Staff for Same Admin
+### Scenario 3: Multiple Staff for Same Client
 ```php
+// Client (ID: 1)
+{
+    "id": 1,
+    "company_name": "TierOne Corp",
+    "company_email": "contact@tierone.com"
+}
+
 // Admin (ID: 1)
 {
     "id": 1,
     "name": "Admin User",
     "role": "admin",
-    "client_id": 0
+    "client_id": 1
 }
 
 // Staff 1 (ID: 2)
@@ -147,7 +182,8 @@ public function getEffectiveClientId(): int
 ```php
 // In OrderService::createOrder()
 $order = Order::create([
-    'client_id' => auth()->user()->getEffectiveClientId(),
+    'client_id' => auth()->user()->client_id,  // User's client
+    'user_id' => auth()->id(),                 // Who created the order
     'tax' => $request->tax,
     'notes' => $request->notes,
     // ... other fields
@@ -160,7 +196,7 @@ $order = Order::create([
 public function scopeForAuthClient($query)
 {
     if (auth()->check()) {
-        $clientId = auth()->user()->getEffectiveClientId();
+        $clientId = auth()->user()->client_id;
         return $query->where('client_id', $clientId);
     }
     
@@ -171,8 +207,8 @@ public function scopeForAuthClient($query)
 ### Security Checks
 ```php
 // In ClientController::orders()
-$effectiveClientId = auth()->user()->getEffectiveClientId();
-if ($effectiveClientId !== $id) {
+$userClientId = auth()->user()->client_id;
+if ($userClientId !== $id) {
     return response()->json([
         'message' => 'Forbidden. You can only access orders for your client.',
         'status_code' => 403,
@@ -188,7 +224,8 @@ curl -X POST http://localhost:8000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Admin User",
-    "company_name": null,
+    "company_name": "TierOne Corp",
+    "company_email": "contact@tierone.com",
     "email": "admin@tierone.com",
     "password": "password123",
     "password_confirmation": "password123"
@@ -198,12 +235,21 @@ curl -X POST http://localhost:8000/api/auth/register \
 **Response**:
 ```json
 {
+  "message": "User registered successfully",
   "user": {
     "id": 1,
     "name": "Admin User",
     "role": "admin",
-    "client_id": 0
-  }
+    "client_id": 1
+  },
+  "client": {
+    "id": 1,
+    "company_name": "TierOne Corp",
+    "company_email": "contact@tierone.com"
+  },
+  "token": "...",
+  "token_type": "Bearer",
+  "status_code": 201
 }
 ```
 
@@ -232,12 +278,14 @@ curl -X POST http://localhost:8000/api/auth/register-staff \
 **Response**:
 ```json
 {
+  "message": "Staff member registered successfully",
   "staff": {
     "id": 2,
     "name": "Staff User",
     "role": "staff",
     "client_id": 1
-  }
+  },
+  "status_code": 201
 }
 ```
 
@@ -260,7 +308,7 @@ curl -X POST http://localhost:8000/api/orders \
   }'
 ```
 
-**Result**: Order created with `client_id = 1` (admin's effective client ID)
+**Result**: Order created with `client_id = 1` and `user_id = 1` (admin's ID)
 
 ```bash
 # Create order as staff
@@ -280,7 +328,7 @@ curl -X POST http://localhost:8000/api/orders \
   }'
 ```
 
-**Result**: Order created with `client_id = 1` (staff's effective client ID, same as admin)
+**Result**: Order created with `client_id = 1` (same as admin) and `user_id = 2` (staff's ID)
 
 ### Test Order Access
 ```bash
@@ -305,39 +353,49 @@ curl -X GET http://localhost:8000/api/orders \
 
 ## Database Queries for Verification
 
-### Check User Roles and Client IDs
+### Check Clients and Users
 ```sql
-SELECT id, name, role, client_id FROM users;
+SELECT 
+    c.id as client_id,
+    c.company_name,
+    c.company_email,
+    u.id as user_id,
+    u.name as user_name,
+    u.role,
+    u.client_id
+FROM clients c
+LEFT JOIN users u ON c.id = u.client_id
+ORDER BY c.id, u.role;
 ```
 
 ### Check Orders by Client
 ```sql
-SELECT id, order_number, client_id, total, created_at 
-FROM orders 
-ORDER BY client_id, created_at DESC;
+SELECT 
+    o.id,
+    o.order_number,
+    o.client_id,
+    o.user_id,
+    u.name as created_by,
+    o.total,
+    o.created_at 
+FROM orders o
+JOIN users u ON o.user_id = u.id
+ORDER BY o.client_id, o.created_at DESC;
 ```
 
 ### Check Multi-Tenancy Data
 ```sql
 SELECT 
-    u.id as user_id,
-    u.name as user_name,
-    u.role,
-    u.client_id,
-    CASE 
-        WHEN u.role = 'admin' THEN u.id
-        ELSE u.client_id
-    END as effective_client_id,
-    COUNT(o.id) as order_count
-FROM users u
-LEFT JOIN orders o ON (
-    CASE 
-        WHEN u.role = 'admin' THEN u.id
-        ELSE u.client_id
-    END = o.client_id
-)
-GROUP BY u.id, u.name, u.role, u.client_id
-ORDER BY effective_client_id, u.role;
+    c.id as client_id,
+    c.company_name,
+    COUNT(DISTINCT u.id) as user_count,
+    COUNT(o.id) as order_count,
+    SUM(o.total) as total_revenue
+FROM clients c
+LEFT JOIN users u ON c.id = u.client_id
+LEFT JOIN orders o ON c.id = o.client_id
+GROUP BY c.id, c.company_name
+ORDER BY c.id;
 ```
 
-This multi-tenancy implementation demonstrates proper **data isolation**, **role-based access control**, and **scalable architecture** - perfect for a technical challenge presentation!
+This multi-tenancy implementation demonstrates proper **client-user separation**, **data isolation**, **role-based access control**, and **scalable architecture** - perfect for a technical challenge presentation!

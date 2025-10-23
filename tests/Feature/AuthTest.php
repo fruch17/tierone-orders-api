@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Models\Client;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -48,7 +49,6 @@ class AuthTest extends TestCase
             'name' => 'John Doe',
             'email' => 'john@acme.com',
             'role' => 'admin',
-            'client_id' => 1 // Now points to the created client
         ]);
 
         // Verify client was created in database
@@ -56,6 +56,11 @@ class AuthTest extends TestCase
             'company_name' => 'ACME Corp',
             'company_email' => 'contact@acme.com'
         ]);
+
+        // Verify user is linked to the correct client
+        $user = User::where('email', 'john@acme.com')->first();
+        $client = Client::where('company_email', 'contact@acme.com')->first();
+        $this->assertEquals($client->id, $user->client_id);
     }
 
     /**
