@@ -136,9 +136,9 @@ php artisan test --filter BasicApiTest
 ✓ orders endpoint requires auth
 ✓ admin endpoint requires admin
 
-Tests:    25 passed (75 assertions)
-Duration: 3.2s
-Database: MySQL (production-like environment)
+Tests:    26 passed (190 assertions)
+Duration: 8.43s (localhost) / 29.92s (Docker)
+Database: MySQL (optimized migrations)
 ```
 
 **What this shows:**

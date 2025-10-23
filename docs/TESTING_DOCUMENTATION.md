@@ -335,8 +335,8 @@ public function test_admin_endpoint_requires_admin(): void
 
 ### Current Status
 ```
-Tests:    25 passed (75 assertions)
-Duration: 3.2s
+Tests:    26 passed (190 assertions)
+Duration: 8.43s (localhost) / 29.92s (Docker)
 ```
 
 ### Passing Tests ✅
@@ -345,12 +345,12 @@ Duration: 3.2s
 - **Service Layer Tests** - Business logic validation
 - **Basic API Tests** - Core API functionality
 - **Staff Registration Tests** - Role-based access control
-- **Multi-tenancy Tests** - Data isolation and client separation
+- **Optimized Migrations** - Single consolidated migration for faster execution
 
 ### Test Coverage
 - **Feature Tests**: 20 tests covering end-to-end functionality
 - **Unit Tests**: 5 tests covering service layer business logic
-- **Total Assertions**: 75 assertions validating all aspects of the system
+- **Total Assertions**: 190 assertions validating all aspects of the system
 
 ---
 

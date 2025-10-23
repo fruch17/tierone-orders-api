@@ -7,7 +7,75 @@
 
 A **multi-tenant Order Management API** built with Laravel 11 for the TierOne Engineering technical challenge. Features role-based authentication, order management, asynchronous invoice generation, and comprehensive testing following SOLID principles.
 
-## 🚀 Quick Start
+## 🐳 Docker Setup (Recommended)
+
+### Quick Start with Docker
+
+The easiest way to run this project is using Docker:
+
+#### Windows:
+```bash
+# Run the automated setup
+docker-setup.bat
+```
+
+#### Linux/Mac:
+```bash
+# Make script executable and run
+chmod +x docker-setup.sh
+./docker-setup.sh
+```
+
+#### Manual Docker Setup:
+```bash
+# 1. Create environment file
+cp .env.docker .env
+
+# 2. Build and start containers
+docker-compose up -d --build
+
+# 3. Generate application key
+docker-compose exec app php artisan key:generate
+
+# 4. Run database migrations (optimized)
+docker-compose exec app php artisan migrate:fresh --force
+
+# 5. Run tests
+docker-compose exec app php artisan test
+```
+
+### Docker Services
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| **API** | http://localhost:8000 | Main Laravel application |
+| **phpMyAdmin** | http://localhost:8080 | MySQL database management |
+| **MySQL** | localhost:3306 | Database server |
+| **Redis** | localhost:6379 | Cache and session storage |
+
+### Docker Commands
+
+```bash
+# Start services
+docker-compose up -d
+
+# Stop services
+docker-compose down
+
+# View logs
+docker-compose logs -f
+
+# Access container
+docker-compose exec app bash
+
+# Run Artisan commands
+docker-compose exec app php artisan migrate
+docker-compose exec app php artisan test
+```
+
+For detailed Docker documentation, see [Docker Setup Guide](docs/DOCKER_SETUP.md).
+
+## 🚀 Manual Setup (Alternative)
 
 ### Prerequisites
 
@@ -52,9 +120,9 @@ A **multi-tenant Order Management API** built with Laravel 11 for the TierOne En
    mysql -u your_username -p -e "CREATE DATABASE your_database_name;"
    ```
 
-6. **Run migrations**
+6. **Run migrations (optimized)**
    ```bash
-   php artisan migrate
+   php artisan migrate:fresh
    ```
 
 7. **Start the server**
@@ -130,10 +198,11 @@ php artisan test --debug
 ```
 
 ### Test Results
-- **25 tests** passing
-- **75 assertions** verified
+- **26 tests** passing
+- **190 assertions** verified
 - **0 failures**
 - **MySQL database** testing environment
+- **Optimized migrations** for faster execution
 
 ## 📚 API Documentation
 
@@ -192,6 +261,9 @@ curl -X POST http://localhost:8000/api/auth/register \
 - [**Development Approach (English)**](docs/MY_DEVELOPMENT_APPROACH.md) - Technical methodology
 - [**Enfoque de Desarrollo (Español)**](docs/MI_ENFOQUE_DESARROLLO.md) - Metodología técnica
 
+### Docker & Deployment
+- [**Docker Setup**](docs/DOCKER_SETUP.md) - Complete Docker configuration
+
 ## 🛠️ Postman Collection
 
 Import the Postman collection for easy API testing:
@@ -222,13 +294,16 @@ Import the Postman collection for easy API testing:
 - ✅ **Audit Trail** - User tracking for orders
 - ✅ **SOLID Principles** - Clean, maintainable code
 
-### Database Schema
+### Database Schema (Optimized)
 - **clients** - Client companies/organizations
-- **users** - Authentication and multi-tenancy
+- **users** - Authentication and multi-tenancy (linked to clients)
 - **orders** - Order management with client isolation
 - **order_items** - Order line items
 - **jobs** - Queue job processing
 - **personal_access_tokens** - API authentication
+- **cache/cache_locks** - Application caching
+- **sessions** - User session management
+- **password_reset_tokens** - Password reset functionality
 
 ## 🔧 Configuration
 
@@ -281,10 +356,11 @@ php artisan queue:monitor
 
 ## 📊 Project Statistics
 
-- **25 Tests** - All passing
-- **75 Assertions** - Verified
+- **26 Tests** - All passing
+- **190 Assertions** - Verified
 - **10 Test Files** - Feature and unit tests
 - **3 Factory Files** - Test data generation
+- **1 Optimized Migration** - Consolidated database schema
 - **15+ Documentation Files** - Comprehensive guides
 - **1 Postman Collection** - API testing
 

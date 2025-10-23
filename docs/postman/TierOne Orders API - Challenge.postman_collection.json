@@ -31,7 +31,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"name\": \"John Doe\",\r\n    \"company_name\": \"ACME Logistics 2\",\r\n    \"email\": \"john@acme.com\",\r\n    \"password\": \"password123\",\r\n    \"password_confirmation\": \"password123\"\r\n  }",
+							"raw": "{\r\n    \"name\": \"Freddy Doe\",\r\n    \"company_name\": \"Urbicode LLC\",\r\n    \"company_email\": \"admin@urbicode.com\",\r\n    \"email\": \"freddy@urbicode.com\",\r\n    \"password\": \"password123\",\r\n    \"password_confirmation\": \"password123\"\r\n  }",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -68,7 +68,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"email\": \"john@acme.com\",\r\n    \"password\": \"password123\"\r\n  }",
+							"raw": "{\r\n    \"email\": \"freddy@urbicode.com\",\r\n    \"password\": \"password123\"\r\n  }",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -187,7 +187,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"name\": \"Staff User\",\r\n    \"email\": \"staff@tierone.com\",\r\n    \"password\": \"password123\",\r\n    \"password_confirmation\": \"password123\"\r\n  }",
+							"raw": "{\r\n    \"name\": \"Staff User Urbicode\",\r\n    \"email\": \"staff@urbicode.com\",\r\n    \"password\": \"password123\",\r\n    \"password_confirmation\": \"password123\"\r\n  }",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -241,7 +241,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"tax\": 15.50,\r\n  \"notes\": \"Urgent delivery to warehouse 5\",\r\n  \"items\": [\r\n    {\r\n      \"product_name\": \"Laptop Dell XPS 13\",\r\n      \"quantity\": 2,\r\n      \"unit_price\": 1200.00\r\n    },\r\n    {\r\n      \"product_name\": \"Wireless Mouse\",\r\n      \"quantity\": 5,\r\n      \"unit_price\": 25.99\r\n    }\r\n  ]\r\n}",
+							"raw": "{\r\n  \"tax\": 10.50,\r\n  \"notes\": \"Staff urbicode TEST\",\r\n  \"items\": [\r\n    {\r\n      \"product_name\": \"Desktop Dell\",\r\n      \"quantity\": 1,\r\n      \"unit_price\": 1500.00\r\n    },\r\n    {\r\n      \"product_name\": \"Speakers 300 Watts\",\r\n      \"quantity\": 4,\r\n      \"unit_price\": 150.50\r\n    }\r\n  ]\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -296,7 +296,7 @@
 					"response": []
 				},
 				{
-					"name": "{{baseurl}}/api/orders/2",
+					"name": "{{baseurl}}/api/orders/1",
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -317,14 +317,14 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseurl}}/api/orders/2",
+							"raw": "{{baseurl}}/api/orders/1",
 							"host": [
 								"{{baseurl}}"
 							],
 							"path": [
 								"api",
 								"orders",
-								"2"
+								"1"
 							]
 						}
 					},

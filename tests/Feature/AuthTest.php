@@ -69,12 +69,15 @@ class AuthTest extends TestCase
      */
     public function test_user_can_login(): void
     {
+        // Create a client first
+        $client = Client::factory()->create();
+        
         // Create a user first
         $user = User::factory()->create([
             'email' => 'test@example.com',
             'password' => Hash::make('password123'),
             'role' => 'admin',
-            'client_id' => 0
+            'client_id' => $client->id
         ]);
 
         $loginData = [
@@ -127,10 +130,13 @@ class AuthTest extends TestCase
      */
     public function test_admin_can_register_staff(): void
     {
+        // Create a client first
+        $client = Client::factory()->create();
+        
         // Create admin user
         $admin = User::factory()->create([
             'role' => 'admin',
-            'client_id' => 0
+            'client_id' => $client->id
         ]);
 
         $staffData = [
@@ -171,10 +177,13 @@ class AuthTest extends TestCase
      */
     public function test_staff_cannot_register_staff(): void
     {
+        // Create a client first
+        $client = Client::factory()->create();
+        
         // Create staff user
         $staff = User::factory()->create([
             'role' => 'staff',
-            'client_id' => 1
+            'client_id' => $client->id
         ]);
 
         $staffData = [

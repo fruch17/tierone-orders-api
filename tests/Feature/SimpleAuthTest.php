@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Models\Client;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -63,12 +64,15 @@ class SimpleAuthTest extends TestCase
      */
     public function test_user_can_login(): void
     {
+        // Create a client first
+        $client = Client::factory()->create();
+        
         // Create a user first
         $user = User::factory()->create([
             'email' => 'test' . time() . '@example.com',
             'password' => Hash::make('password123'),
             'role' => 'admin',
-            'client_id' => 0
+            'client_id' => $client->id
         ]);
 
         $loginData = [
