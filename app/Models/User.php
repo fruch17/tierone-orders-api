@@ -23,7 +23,6 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
-        'company_name',
         'email',
         'password',
         'role',
@@ -122,11 +121,7 @@ class User extends Authenticatable
      */
     public function getEffectiveClientId(): int
     {
-        if ($this->isAdmin()) {
-            return $this->id; // Admin is their own client
-        }
-        
-        return $this->client_id; // Staff belongs to admin's client
+        return $this->client_id; // client_id is the same for both admin and staff
     }
 
     /**
@@ -163,5 +158,16 @@ class User extends Authenticatable
     {
         return $this->belongsTo(User::class, 'client_id', 'id')
                     ->where('role', 'admin');
+    }
+
+    /**
+     * Get the client that this user belongs to.
+     * Both admin and staff users belong to a client
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(Client::class, 'client_id', 'id');
     }
 }

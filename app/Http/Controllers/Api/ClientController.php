@@ -56,7 +56,6 @@ class ClientController extends Controller
             $orders = $this->orderService->getOrdersForClient($id);
 
             return response()->json([
-                'client' => new UserResource($client),
                 'orders' => OrderResource::collection($orders),
                 'count' => $orders->count(),
                 'status_code' => 200,

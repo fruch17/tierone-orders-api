@@ -100,14 +100,14 @@ class Order extends Model
 
     /**
      * Get the client that owns the order.
-     * Defines the relationship with User model for multi-tenancy
+     * Defines the relationship with Client model for multi-tenancy
      * Both admin and staff can access orders for the same client
      *
      * @return BelongsTo
      */
     public function client(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'client_id', 'id');
+        return $this->belongsTo(Client::class, 'client_id', 'id');
     }
 
     /**

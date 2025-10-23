@@ -27,6 +27,7 @@ class RegisterRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'company_name' => ['required', 'string', 'max:255'],
+            'company_email' => ['required', 'string', 'email', 'max:255', 'unique:clients,company_email'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'confirmed', Password::min(8)],
         ];
@@ -43,6 +44,9 @@ class RegisterRequest extends FormRequest
         return [
             'name.required' => 'The name field is required.',
             'company_name.required' => 'The company name field is required.',
+            'company_email.required' => 'The company email field is required.',
+            'company_email.email' => 'Please provide a valid company email address.',
+            'company_email.unique' => 'This company email is already registered.',
             'email.required' => 'The email field is required.',
             'email.email' => 'Please provide a valid email address.',
             'email.unique' => 'This email is already registered.',
@@ -55,7 +59,6 @@ class RegisterRequest extends FormRequest
     /**
      * Prepare the data for validation.
      * Ensures data is properly formatted before validation
-     * Auto-assigns admin role for public registration
      */
     protected function prepareForValidation(): void
     {
@@ -65,12 +68,5 @@ class RegisterRequest extends FormRequest
                 'email' => strtolower($this->email)
             ]);
         }
-
-        // Auto-assign admin role for public registration
-        // This ensures the first registered user becomes admin
-        $this->merge([
-            'role' => 'admin',
-            'client_id' => 0, // Admin users have client_id = 0 (they are their own client)
-        ]);
     }
 }

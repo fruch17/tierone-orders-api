@@ -20,6 +20,7 @@ class SimpleAuthTest extends TestCase
         $userData = [
             'name' => 'John Doe',
             'company_name' => 'ACME Corp',
+            'company_email' => 'contact' . time() . '@acme.com',
             'email' => 'john' . time() . '@acme.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
@@ -33,7 +34,6 @@ class SimpleAuthTest extends TestCase
                     'user' => [
                         'id',
                         'name',
-                        'company_name',
                         'email',
                         'role',
                         'client_id'
@@ -46,9 +46,14 @@ class SimpleAuthTest extends TestCase
         // Verify user was created in database
         $this->assertDatabaseHas('users', [
             'name' => 'John Doe',
-            'email' => 'john@acme.com',
+            'email' => 'john' . time() . '@acme.com',
             'role' => 'admin',
-            'client_id' => 0
+        ]);
+
+        // Verify client was created in database
+        $this->assertDatabaseHas('clients', [
+            'company_name' => 'ACME Corp',
+            'company_email' => 'contact' . time() . '@acme.com'
         ]);
     }
 

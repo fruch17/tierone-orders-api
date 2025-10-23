@@ -26,7 +26,7 @@ class OrderResource extends JsonResource
             'total' => $this->total,
             'notes' => $this->notes,
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
-            'client' => new UserResource($this->whenLoaded('client')),
+            'client' => new ClientResource($this->whenLoaded('client')),
             'user' => new UserResource($this->whenLoaded('user')),
             'created_at' => $this->created_at->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at->format('Y-m-d H:i:s'),

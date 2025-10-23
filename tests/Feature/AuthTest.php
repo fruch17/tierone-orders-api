@@ -20,6 +20,7 @@ class AuthTest extends TestCase
         $userData = [
             'name' => 'John Doe',
             'company_name' => 'ACME Corp',
+            'company_email' => 'contact@acme.com',
             'email' => 'john@acme.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
@@ -33,7 +34,6 @@ class AuthTest extends TestCase
                     'user' => [
                         'id',
                         'name',
-                        'company_name',
                         'email',
                         'role',
                         'client_id'
@@ -48,7 +48,13 @@ class AuthTest extends TestCase
             'name' => 'John Doe',
             'email' => 'john@acme.com',
             'role' => 'admin',
-            'client_id' => 0
+            'client_id' => 1 // Now points to the created client
+        ]);
+
+        // Verify client was created in database
+        $this->assertDatabaseHas('clients', [
+            'company_name' => 'ACME Corp',
+            'company_email' => 'contact@acme.com'
         ]);
     }
 
@@ -150,7 +156,7 @@ class AuthTest extends TestCase
             'name' => 'Jane Staff',
             'email' => 'staff@acme.com',
             'role' => 'staff',
-            'client_id' => $admin->id
+            'client_id' => $admin->client_id // Staff should have same client_id as admin
         ]);
     }
 

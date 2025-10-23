@@ -32,6 +32,7 @@ class BasicApiTest extends TestCase
         $userData = [
             'name' => 'Test User',
             'company_name' => 'Test Corp',
+            'company_email' => 'contact' . time() . '@testcorp.com',
             'email' => 'test' . time() . '@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',

@@ -25,12 +25,11 @@ class UserFactory extends Factory
     {
         return [
             'name' => fake()->name(),
-            'company_name' => fake()->company(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'role' => 'admin',
-            'client_id' => 0,
+            'client_id' => 1, // Default to client ID 1
             'remember_token' => Str::random(10),
         ];
     }
@@ -63,7 +62,7 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'role' => 'admin',
-            'client_id' => 0,
+            'client_id' => 1, // Admin users belong to client 1
         ]);
     }
 }

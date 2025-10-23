@@ -70,7 +70,7 @@ class OrderService
     public function getOrderById(int $orderId): ?Order
     {
         return Order::forAuthClient()
-                   ->with(['items','user'])
+                   ->with(['items', 'client', 'user'])
                    ->find($orderId);
     }
 
@@ -84,7 +84,7 @@ class OrderService
     public function getOrdersForAuthUser(): Collection
     {
         return Order::forAuthClient()
-                   ->with(['items', 'user'])
+                   ->with(['items', 'client', 'user'])
                    ->latest()
                    ->get();
     }
@@ -107,7 +107,7 @@ class OrderService
         }
 
         return Order::where('client_id', $clientId)
-                   ->with(['items', 'user'])
+                   ->with(['items', 'client', 'user'])
                    ->latest()
                    ->get();
     }

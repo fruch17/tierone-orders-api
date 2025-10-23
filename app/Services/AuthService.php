@@ -5,7 +5,9 @@ namespace App\Services;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\RegisterStaffRequest;
 use App\Http\Resources\UserResource;
+use App\Http\Resources\ClientResource;
 use App\Models\User;
+use App\Models\Client;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
@@ -29,14 +31,19 @@ class AuthService
     {
         $validated = $request->validated();
 
-        // Create new user (client/tenant)
+        // Create client first
+        $client = Client::create([
+            'company_name' => $validated['company_name'],
+            'company_email' => $validated['company_email'],
+        ]);
+
+        // Create new user (admin) and link to client
         $user = User::create([
             'name' => $validated['name'],
-            'company_name' => $validated['company_name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role' => $validated['role'] ?? 'admin', // Auto-assigned in RegisterRequest
-            'client_id' => $validated['client_id'] ?? 0, // Auto-assigned in RegisterRequest
+            'role' => 'admin',
+            'client_id' => $client->id, // Link user to client
         ]);
 
         // Generate API token for immediate authentication
@@ -44,6 +51,7 @@ class AuthService
 
         return [
             'user' => new UserResource($user),
+            'client' => new ClientResource($client),
             'token' => $token,
             'token_type' => 'Bearer'
         ];
@@ -64,11 +72,10 @@ class AuthService
         // Create staff user with role 'staff'
         $staff = User::create([
             'name' => $validatedData['name'],
-            'company_name' => null, // Staff don't have company_name (belongs to admin's company)
             'email' => $validatedData['email'],
             'password' => Hash::make($validatedData['password']),
             'role' => 'staff', // Staff role assigned
-            'client_id' => auth()->id(), // Staff belongs to the admin who created them
+            'client_id' => auth()->user()->client_id, // Staff belongs to the same client as admin
         ]);
 
         return new UserResource($staff);
