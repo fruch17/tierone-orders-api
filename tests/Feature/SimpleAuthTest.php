@@ -20,7 +20,7 @@ class SimpleAuthTest extends TestCase
         $userData = [
             'name' => 'John Doe',
             'company_name' => 'ACME Corp',
-            'email' => 'john@acme.com',
+            'email' => 'john' . time() . '@acme.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ];
@@ -60,14 +60,14 @@ class SimpleAuthTest extends TestCase
     {
         // Create a user first
         $user = User::factory()->create([
-            'email' => 'test@example.com',
+            'email' => 'test' . time() . '@example.com',
             'password' => Hash::make('password123'),
             'role' => 'admin',
             'client_id' => 0
         ]);
 
         $loginData = [
-            'email' => 'test@example.com',
+            'email' => $user->email,
             'password' => 'password123',
         ];
 

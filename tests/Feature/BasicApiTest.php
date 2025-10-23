@@ -32,14 +32,14 @@ class BasicApiTest extends TestCase
         $userData = [
             'name' => 'Test User',
             'company_name' => 'Test Corp',
-            'email' => 'test@example.com',
+            'email' => 'test' . time() . '@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ];
 
         $response = $this->postJson('/api/auth/register', $userData);
 
-        // Should either succeed (201) or fail with validation (422)
+        // Should succeed (201) since database is properly set up
         $response->assertStatus(201)
                 ->assertJsonStructure([
                     'message',

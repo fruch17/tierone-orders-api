@@ -178,7 +178,7 @@ class AuthTest extends TestCase
 
         $response->assertStatus(403)
                 ->assertJson([
-                    'message' => 'Forbidden. You do not have admin privileges.',
+                    'message' => 'Forbidden. Admin access required.',
                     'status_code' => 403
                 ]);
     }
