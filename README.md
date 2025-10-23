@@ -3,15 +3,21 @@
 [![Laravel](https://img.shields.io/badge/Laravel-11.x-red.svg)](https://laravel.com)
 [![PHP](https://img.shields.io/badge/PHP-8.2+-blue.svg)](https://php.net)
 [![MySQL](https://img.shields.io/badge/MySQL-8.0+-orange.svg)](https://mysql.com)
-[![Tests](https://img.shields.io/badge/Tests-25%20passed-green.svg)](https://github.com/fruch17/tierone-orders-api)
+[![Tests](https://img.shields.io/badge/Tests-26%20passed-green.svg)](https://github.com/fruch17/tierone-orders-api)
 
 A **multi-tenant Order Management API** built with Laravel 11 for the TierOne Engineering technical challenge. Features role-based authentication, order management, asynchronous invoice generation, and comprehensive testing following SOLID principles.
 
-## 🐳 Docker Setup (Recommended)
+## 🚀 Quick Start
 
-### Quick Start with Docker
+### Prerequisites
 
-The easiest way to run this project is using Docker:
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/fruch17/tierone-orders-api.git
+   cd tierone-orders-api
+   ```
+
+### Option 1: Docker Setup (Recommended)
 
 #### Windows:
 ```bash
@@ -87,24 +93,18 @@ For detailed Docker documentation, see [Docker Setup Guide](docs/DOCKER_SETUP.md
 
 ### Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/fruch17/tierone-orders-api.git
-   cd tierone-orders-api
-   ```
-
-2. **Install dependencies**
+1. **Install dependencies**
    ```bash
    composer install
    ```
 
-3. **Environment setup**
+2. **Environment setup**
    ```bash
    cp .env.example .env
    php artisan key:generate
    ```
 
-4. **Database configuration**
+3. **Database configuration**
    ```bash
    # Update .env with your database credentials
    DB_CONNECTION=mysql
@@ -115,17 +115,17 @@ For detailed Docker documentation, see [Docker Setup Guide](docs/DOCKER_SETUP.md
    DB_PASSWORD=your_password
    ```
 
-5. **Create database**
+4. **Create database**
    ```bash
    mysql -u your_username -p -e "CREATE DATABASE your_database_name;"
    ```
 
-6. **Run migrations (optimized)**
+5. **Run migrations (optimized)**
    ```bash
    php artisan migrate:fresh
    ```
 
-7. **Start the server**
+6. **Start the server**
    ```bash
    # Option 1: Laravel development server
    php artisan serve
