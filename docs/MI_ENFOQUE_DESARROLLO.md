@@ -55,10 +55,12 @@ public function createOrder(StoreOrderRequest $request): Order
 {
     return DB::transaction(function () use ($request) {
         $order = Order::create([
-            'client_id' => auth()->user()->client_id, // Multi-tenancy: client ownership
-            'user_id' => auth()->id(),                 // Audit trail: who created it
+            'client_id' => auth()->user()->getEffectiveClientId(), // Multi-tenancy: use effective client ID
+            'user_id' => auth()->id(),                             // Audit trail: track who created the order
             'tax' => $request->tax,
             'notes' => $request->notes,
+            'subtotal' => 0, // Will be calculated after items are created
+            'total' => 0,    // Will be calculated after items are created
         ]);
         // ... rest of the logic
     });
