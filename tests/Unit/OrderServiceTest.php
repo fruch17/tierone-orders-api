@@ -101,7 +101,7 @@ class OrderServiceTest extends TestCase
         $user1 = User::factory()->create(['role' => 'admin', 'client_id' => $client1->id]);
         $user2 = User::factory()->create(['role' => 'admin', 'client_id' => $client2->id]);
 
-        // Create orders for both users
+        // OPTION 1: Create orders manually specifying IDs (current implementation)
         Order::factory()->count(2)->create([
             'client_id' => $client1->id,
             'user_id' => $user1->id
@@ -110,6 +110,16 @@ class OrderServiceTest extends TestCase
             'client_id' => $client2->id,
             'user_id' => $user2->id
         ]);
+        
+        // OPTION 2: Alternative using ->forClient() and ->createdBy() methods (commented out)
+        // Order::factory()->count(2)
+        //     ->forClient($client1)
+        //     ->createdBy($user1)
+        //     ->create();
+        // Order::factory()->count(3)
+        //     ->forClient($client2)
+        //     ->createdBy($user2)
+        //     ->create();
 
         // Test user1 only sees their orders
         $this->actingAs($user1);
@@ -148,11 +158,17 @@ class OrderServiceTest extends TestCase
             'client_id' => $client->id
         ]);
 
-        // Create orders for client
+        // OPTION 1: Create orders manually specifying IDs (current implementation)
         Order::factory()->count(2)->create([
             'client_id' => $client->id,
             'user_id' => $admin->id
         ]);
+        
+        // OPTION 2: Alternative using ->forClient() and ->createdBy() methods (commented out)
+        // Order::factory()->count(2)
+        //     ->forClient($client)
+        //     ->createdBy($admin)
+        //     ->create();
 
         // Test admin sees orders
         $this->actingAs($admin);
@@ -184,11 +200,17 @@ class OrderServiceTest extends TestCase
         $user1 = User::factory()->create(['role' => 'admin', 'client_id' => $client1->id]);
         $user2 = User::factory()->create(['role' => 'admin', 'client_id' => $client2->id]);
 
-        // Create order for user2's client
+        // OPTION 1: Create order manually specifying IDs (current implementation)
         $order = Order::factory()->create([
             'client_id' => $client2->id,
             'user_id' => $user2->id
         ]);
+        
+        // OPTION 2: Alternative using ->forClient() and ->createdBy() methods (commented out)
+        // $order = Order::factory()
+        //     ->forClient($client2)
+        //     ->createdBy($user2)
+        //     ->create();
 
         // Test user1 cannot access user2's order
         $this->actingAs($user1);

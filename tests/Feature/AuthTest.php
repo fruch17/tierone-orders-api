@@ -72,13 +72,20 @@ class AuthTest extends TestCase
         // Create a client first
         $client = Client::factory()->create();
         
-        // Create a user first
+        // OPTION 1: Create user manually with specific role (current implementation)
         $user = User::factory()->create([
             'email' => 'test@example.com',
             'password' => Hash::make('password123'),
             'role' => 'admin',
             'client_id' => $client->id
         ]);
+        
+        // OPTION 2: Alternative using ->admin() method (commented out)
+        // $user = User::factory()->admin()->create([
+        //     'email' => 'test@example.com',
+        //     'password' => Hash::make('password123'),
+        //     'client_id' => $client->id  // Still need to specify client_id
+        // ]);
 
         $loginData = [
             'email' => 'test@example.com',
@@ -133,11 +140,16 @@ class AuthTest extends TestCase
         // Create a client first
         $client = Client::factory()->create();
         
-        // Create admin user
+        // OPTION 1: Create admin user manually (current implementation)
         $admin = User::factory()->create([
             'role' => 'admin',
             'client_id' => $client->id
         ]);
+        
+        // OPTION 2: Alternative using ->admin() method (commented out)
+        // $admin = User::factory()->admin()->create([
+        //     'client_id' => $client->id  // Still need to specify client_id
+        // ]);
 
         $staffData = [
             'name' => 'Jane Staff',
@@ -180,11 +192,16 @@ class AuthTest extends TestCase
         // Create a client first
         $client = Client::factory()->create();
         
-        // Create staff user
+        // OPTION 1: Create staff user manually (current implementation)
         $staff = User::factory()->create([
             'role' => 'staff',
             'client_id' => $client->id
         ]);
+        
+        // OPTION 2: Alternative using ->staff() method (commented out)
+        // $staff = User::factory()->staff()->create([
+        //     'client_id' => $client->id  // Still need to specify client_id
+        // ]);
 
         $staffData = [
             'name' => 'Another Staff',
